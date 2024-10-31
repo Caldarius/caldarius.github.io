@@ -1,0 +1,406 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>代理模式的三种实现 | Caldarius</title>
+<link rel="shortcut icon" href="https://caldarius.github.io//favicon.ico?v=1730380932353">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://caldarius.github.io//styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="代理模式的三种实现 | Caldarius - Atom Feed" href="https://caldarius.github.io//atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="Proxy
+
+本文对《onJava8基础卷》第十九章反射中提到的静态代理和基于反射技术的动态代理，也就是通常说的JDK代理的方式进行分享。同时摘录了CGLib实现动态代理的方式。并对代码实现中的一些细节进行进行了注释。
+
+首先是一个简单的例..." />
+    <meta name="keywords" content="设计模式" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://caldarius.github.io/">
+  <img class="avatar" src="https://caldarius.github.io//images/avatar.png?v=1730380932353" alt="">
+  </a>
+  <h1 class="site-title">
+    Caldarius
+  </h1>
+  <p class="site-description">
+    世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活。
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              代理模式的三种实现
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-10-23
+              </span>
+              <span>
+                7 min read
+              </span>
+              
+                <a href="https://caldarius.github.io/tag/dp/" class="post-tag">
+                  # 设计模式
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://caldarius.github.io//post-images/dai-li-mo-shi-de-san-chong-shi-xian.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h1 id="proxy">Proxy</h1>
+<blockquote>
+<p>本文对《onJava8基础卷》第十九章反射中提到的静态代理和基于反射技术的动态代理，也就是通常说的JDK代理的方式进行分享。同时摘录了CGLib实现动态代理的方式。并对代码实现中的一些细节进行进行了注释。</p>
+</blockquote>
+<p>首先是一个简单的例子，展示了代理模式的基本结构：</p>
+<ul>
+<li>通用接口，或者说需要被代理的一组方法。</li>
+<li>被代理对象。</li>
+<li>代理对象。</li>
+</ul>
+<p>被代理对象和代理对象均实现了通用接口。从代理模式的原理触出发，通用接口起到了一个统一的效果，利用了多态这个面向对象的特性。让调用方不需要关注实现，只需要关注功能。体现了封装和扩展。实现接口相较于继承父类我认为是更加灵活的方式。从语义上来讲，继承表示，is-a，接口表示can。同时考虑JDK实现动态代理的方式，我认为使用接口是更合适的。</p>
+<p>但是如果初始类没有提供接口，那么可以考虑重构，提供一组接口或者使用继承的方式完成代理。或者在没有接口，无法继承的情况下也可以使用CGLIB，通过字节码增强完成代理。</p>
+<pre><code class="language-java">package com.caldarius.reflection;
+/**
+ * @Date: 2024/10/10
+ * @Author: Caldarius
+ * @Description:
+ **/
+
+//被代理类和代理类均实现的通用接口，调用方实际上依赖于这个接口，这里体现了依赖倒置的思想。
+//上层不直接依赖于下层，双方都依赖于抽象的接口/抽象类
+interface Interface {
+    void doSomething();
+    void somethingElse(String arg);
+}
+//被代理的对象
+class RealObject implements Interface {
+    @Override public void doSomething() {
+        System.out.println(&quot;doSomething&quot;);
+    }
+    @Override public void somethingElse(String arg) {
+        System.out.println(&quot;somethingElse &quot; + arg);
+    }
+}
+//代理对象
+class SimpleProxy implements Interface {
+    //代理对象持有被代理对象
+    private Interface proxied;
+    SimpleProxy(Interface proxied) {
+        this.proxied = proxied;
+    }
+
+    @Override public void doSomething() {
+        //代理对象在调用被代理对象对应方法之前的操作
+        System.out.println(&quot;SimpleProxy doSomething before proxied doSomething&quot;);
+        //被代理对象调用本身的方法
+        proxied.doSomething();
+        //代理对象在调用被代理对象对应方法之后的操作
+        System.out.println(&quot;SimpleProxy doSomething after proxied doSomething&quot;);
+    }
+    @Override public void somethingElse(String arg) {
+        System.out.println(
+                &quot;SimpleProxy somethingElse &quot; + arg+&quot; before proxied somethingElse&quot;);
+        proxied.somethingElse(arg);
+        System.out.println(
+                &quot;SimpleProxy somethingElse &quot; + arg+&quot; after proxied somethingElse&quot;);
+    }
+}
+
+class SimpleProxyDemo {
+    public static void consumer(Interface iface) {
+        iface.doSomething();
+        iface.somethingElse(&quot;bonobo&quot;);
+    }
+    public static void main(String[] args) {
+        System.out.println(&quot;real done:&quot;);
+        consumer(new RealObject());
+
+        System.out.println(&quot;proxy done:&quot;);
+        consumer(new SimpleProxy(new RealObject()));
+    }
+}
+/* 
+Output：
+real done:
+doSomething
+somethingElse bonobo
+proxy done:
+SimpleProxy doSomething before proxied doSomething
+doSomething
+SimpleProxy doSomething after proxied doSomething
+SimpleProxy somethingElse bonobo before proxied somethingElse
+somethingElse bonobo
+SimpleProxy somethingElse bonobo after proxied somethingElse
+*/
+
+</code></pre>
+<h2 id="反射实现动态代理">反射实现动态代理</h2>
+<p>动态代理是一种更加灵活的方式，省去了手动创建代理类的过程，在运行中创建代理类。缺点是需要在<code>invoke()</code>方法中根据传入参数锁定需要代理的方法，操作起来比较复杂。</p>
+<pre><code class="language-java">package com.caldarius.reflection;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+/**
+ * @Date: 2024/10/10
+ * @Author: Caldarius
+ * @Description:
+ **/
+//调用处理器接口的实现类，判断是什么方法调用，然后决定如何处理
+class DynamicProxyHandler implements InvocationHandler {
+    private Object proxied;
+
+    DynamicProxyHandler(Object proxied) {
+        this.proxied = proxied;
+    }
+    //三个参数分别是：被代理的对象，当前方法，方法的参数
+    @Override public Object invoke(Object proxy, Method method, Object[] args)
+            throws Throwable {
+        System.out.println(
+                &quot;**** proxy: &quot; + proxy.getClass() +
+                        &quot;, method: &quot; + method + &quot;, args: &quot; + args);
+        if(args != null)
+            for(Object arg : args)
+                System.out.println(&quot;  &quot; + arg);
+        return method.invoke(proxied, args);
+    }
+}
+
+class SimpleDynamicProxy {
+    public static void consumer(Interface iface) {
+        iface.doSomething();
+        iface.somethingElse(&quot;bonobo&quot;);
+    }
+
+    public static void main(String[] args) {
+        //使用普通对象调用consumer
+        RealObject real = new RealObject();
+        consumer(real);
+        
+        //构建代理对象，再次调用consumer
+        //三个参数分别是：
+        //1.一个类加载器
+        //2.希望代理对象实现的接口列表
+        //3.InvocationHandler对象的一个实现类 -&gt; 这个类将负责处理代理的主要逻辑
+        Interface proxy = (Interface) Proxy.newProxyInstance(
+                Interface.class.getClassLoader(),
+                new Class[]{ Interface.class },
+                new DynamicProxyHandler(real));
+        consumer(proxy);
+    }
+}
+/*
+ Output:
+doSomething
+somethingElse bonobo
+**** proxy: class com.caldarius.reflection.$Proxy0, method: public abstract void com.caldarius.reflection.Interface.doSomething(), args: null
+doSomething
+**** proxy: class com.caldarius.reflection.$Proxy0, method: public abstract void com.caldarius.reflection.Interface.somethingElse(java.lang.String), args: [Ljava.lang.Object;@1e80bfe8
+  bonobo
+somethingElse bonobo
+*/
+
+</code></pre>
+<h3 id="在invoke中筛选方法的示例">在invoke中筛选方法的示例</h3>
+<pre><code class="language-java">@Override 
+public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    if(method.getName().equals(&quot;interesting&quot;))
+        System.out.println(
+                &quot;Proxy detected the interesting method&quot;);
+    return method.invoke(proxied, args);
+    }
+}
+</code></pre>
+<h2 id="cglib">CGLIB</h2>
+<p>使用CGLib完成动态代理</p>
+<pre><code class="language-java">package com.caldarius.reflection;
+
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
+
+import java.lang.reflect.Method;
+
+public class CglibProxy implements MethodInterceptor {
+    @Override
+    public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+        System.out.println(
+                &quot;**** proxy: &quot; +
+                        &quot;, method: &quot; + method + &quot;, args: &quot; + objects);
+        if(objects != null)
+            for(Object arg : objects)
+                System.out.println(&quot;  &quot; + arg);
+        Object res = methodProxy.invokeSuper(o, objects);
+        System.out.println(&quot;END&quot;);
+        return res;
+    }
+}
+
+class EnhancerHandlerFactory{
+    public Object getProxy() {
+        Enhancer enhancer = new Enhancer();
+        //设置被代理的对象
+        enhancer.setSuperclass(RealObject.class);
+        //设置动态代理处理器
+        enhancer.setCallback(new CglibProxy());
+        return enhancer.create();
+    }
+
+}
+
+class TestProxy{
+    public static void main(String[] args) {
+        RealObject realObject = (RealObject) new EnhancerHandlerFactory().getProxy();
+        realObject.doSomething();
+        realObject.somethingElse(&quot;CGLIB Proxy&quot;);
+    }
+}
+/*
+output:
+**** proxy: , method: public void com.caldarius.reflection.RealObject.doSomething(), args: [Ljava.lang.Object;@46f5f779
+doSomething
+END
+**** proxy: , method: public void com.caldarius.reflection.RealObject.somethingElse(java.lang.String), args: [Ljava.lang.Object;@71e7a66b
+  CGLIB Proxy
+somethingElse CGLIB Proxy
+END
+ */
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#proxy">Proxy</a>
+<ul>
+<li><a href="#%E5%8F%8D%E5%B0%84%E5%AE%9E%E7%8E%B0%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86">反射实现动态代理</a>
+<ul>
+<li><a href="#%E5%9C%A8invoke%E4%B8%AD%E7%AD%9B%E9%80%89%E6%96%B9%E6%B3%95%E7%9A%84%E7%A4%BA%E4%BE%8B">在invoke中筛选方法的示例</a></li>
+</ul>
+</li>
+<li><a href="#cglib">CGLIB</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://caldarius.github.io/post/wms-xiang-guan-zhu-yu-zhong-ying-dui-zhao/">
+              <h3 class="post-title">
+                WMS相关术语中英对照
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://caldarius.github.io//atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

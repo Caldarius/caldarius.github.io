@@ -1,0 +1,201 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>常见数据库索引模型 | Caldarius</title>
+<link rel="shortcut icon" href="https://caldarius.github.io//favicon.ico?v=1730380932353">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://caldarius.github.io//styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="常见数据库索引模型 | Caldarius - Atom Feed" href="https://caldarius.github.io//atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="
+索引是数据库表的目录。
+
+如果将数据库看作是一本巨大的书，那么索引则是书的目录。如果想不借助目录的情况下找到某一段内容，想必是需要费一些功夫的。而索引就是为了解决这个问题，借助索引可以快速定位到目标数据所在的大致范围，减少需要遍历的数据量..." />
+    <meta name="keywords" content="MySQL" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://caldarius.github.io/">
+  <img class="avatar" src="https://caldarius.github.io//images/avatar.png?v=1730380932353" alt="">
+  </a>
+  <h1 class="site-title">
+    Caldarius
+  </h1>
+  <p class="site-description">
+    世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活。
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              常见数据库索引模型
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-10-31
+              </span>
+              <span>
+                4 min read
+              </span>
+              
+                <a href="https://caldarius.github.io/tag/mysql/" class="post-tag">
+                  # MySQL
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://caldarius.github.io//post-images/ds-index.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <blockquote>
+<p>索引是数据库表的目录。</p>
+</blockquote>
+<p>如果将数据库看作是一本巨大的书，那么索引则是书的目录。如果想不借助目录的情况下找到某一段内容，想必是需要费一些功夫的。而索引就是为了解决这个问题，借助索引可以快速定位到目标数据所在的大致范围，减少需要遍历的数据量。</p>
+<p>索引的出现是为了解决查询的时候需要进行全表遍历的问题，实现索引的方式有很多，这里针对其底层数据结构，将其划分为了三种索引模型，分别是Hash表、二叉树、多叉树。下面将简单介绍三种常见的索引模型。</p>
+<h2 id="哈希表">哈希表</h2>
+<p>还是以一本书为例，哈希表是最容易想到的标记方式。读书时，常常将重要内容的页码和在那一页的大致位置记下来，这样在查找具体内容时直接翻到那一页即可。从这个使用方式出发，可以得出一种，键-值对作为数据组织形式的数据结构。其实现思路较为简单，首先建立一个数组存储Value，通过一个函数把Key换算成一个确定的位置，然后将Value放入对应位置。</p>
+<p>如果多个Key经过Hash函数计算之后得到了同一个值，那么就使用链表对其进行处理。</p>
+<p>从其实现思路可知，其value的存储通常是没有顺序的，所以哈希表只适用于等值查询的场景，对于范围查询是无能为力的。需要进行全表遍历。</p>
+<h2 id="二叉树">二叉树</h2>
+<p>那么如何解决范围查询问题呢？</p>
+<p>最容易想到的思路是将Hash表中的无序数组变为有序数组，有序数组的优势在于随机读写以及范围查询的性能优秀。但是其插入和删除时设计目标位置之后所有元素的挪动，复杂度较高。有序数组只适合存储静态数据。</p>
+<p>如何克服这一问题呢？</p>
+<p>将有序数组建立为一棵树，牺牲随机读写能力，保留范围查询能力。</p>
+<p>但是二叉树会带来多次IO的问题。假设二叉树的每个节点都对应一条数据，如果数据均存储在内存中，那么二叉树作为索引是各方面比较完善的。但是内存毕竟是有限的，还是有很多数据是存储在磁盘上的。这时候就涉及磁盘IO问题。访问二叉树的每一个节点，需要将其读入内存，如果二叉树较高，那么就会产生多次IO，很大程度影响性能。</p>
+<h2 id="多叉树">多叉树</h2>
+<p>解决方案是让查询过程访问尽可能多的快，树的节点存放尽可能多的数据。数据的大小应该是与 磁盘块大小相匹配。这样树从二叉树变为多叉树，高度显著降低，IO时间显著降低。</p>
+<p>以 InnoDB 的一个整数字段索引为例，这个 N 差不多是 1200。这棵树高是 4 的时候，就可以存 1200 的 3 次方个值，这已经 17 亿了。考虑到树根的数据块总是在内存中的，一个 10 亿行的表上一个整数字段的索引，查找一个值最多只需要访问 3 次磁盘。其实，树的第二层也有很大概率在内存中，那么访问磁盘的平均次数就更少了。</p>
+<p>以上对三种常用索引进行了简要介绍，希望可以帮助大家理解数据库索引选型。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E5%93%88%E5%B8%8C%E8%A1%A8">哈希表</a></li>
+<li><a href="#%E4%BA%8C%E5%8F%89%E6%A0%91">二叉树</a></li>
+<li><a href="#%E5%A4%9A%E5%8F%89%E6%A0%91">多叉树</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://caldarius.github.io/post/silid-kydl/">
+              <h3 class="post-title">
+                SOLID、KISS、YAGNI、DRY、LOD
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://caldarius.github.io//atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

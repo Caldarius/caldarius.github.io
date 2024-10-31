@@ -1,0 +1,372 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Factory还是Builder | Caldarius</title>
+<link rel="shortcut icon" href="https://caldarius.github.io//favicon.ico?v=1730380932353">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://caldarius.github.io//styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Factory还是Builder | Caldarius - Atom Feed" href="https://caldarius.github.io//atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="每次看到框架中的工厂模式时，便会想起一个和它功能相近的模式——创建者模式。二者均属于创建型设计模式，都在帮助使用者更好地完成创建对象的工作。那么穿过浅层的印象，略微深入。它们为什么作为两种模式出现？二者有什么区别？围绕着两个问题，笔者将简要..." />
+    <meta name="keywords" content="设计模式" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://caldarius.github.io/">
+  <img class="avatar" src="https://caldarius.github.io//images/avatar.png?v=1730380932353" alt="">
+  </a>
+  <h1 class="site-title">
+    Caldarius
+  </h1>
+  <p class="site-description">
+    世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活。
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Factory还是Builder
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-10-22
+              </span>
+              <span>
+                6 min read
+              </span>
+              
+                <a href="https://caldarius.github.io/tag/dp/" class="post-tag">
+                  # 设计模式
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://caldarius.github.io//post-images/factory-huan-shi-builder.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>每次看到框架中的工厂模式时，便会想起一个和它功能相近的模式——创建者模式。二者均属于创建型设计模式，都在帮助使用者更好地完成创建对象的工作。那么穿过浅层的印象，略微深入。它们为什么作为两种模式出现？二者有什么区别？围绕着两个问题，笔者将简要分享自己的拙见。</p>
+<h2 id="工厂模式示例">工厂模式示例</h2>
+<p>单一职责思想告诉我们，一个代码块应该专注于一件事情，如果某一类对象的创建流程较为复杂，并不只是简单地<code>new()</code>一下就可以，那么可以考虑使用工厂模式来解决。</p>
+<p>以SpringFramework中BeanFactory创建Bean对象的工厂方法为例：</p>
+<pre><code class="language-java">protected Object createBean(String beanName, BeanDefinition beanDefinition,Object[] args) throws BeansException {
+        Object bean = null;
+        try {
+            bean = resolveBeforeInstantiation(beanName, beanDefinition);
+            if (null != bean) {
+                return bean;
+            }
+
+            bean = createBeanInstance(beanDefinition, beanName, args);
+            // 给 Bean 填充属性
+            applyPropertyValues(beanName, bean, beanDefinition);
+            // 执行 Bean 的初始化方法和 BeanPostProcessor 的前置和后置处理方法
+            bean = initializeBean(beanName, bean, beanDefinition);
+        } catch (Exception e) {
+            throw new BeansException(&quot;Instantiation of bean failed&quot;, e);
+        }
+        registerDisposableBeanIfNecessary(beanName, bean, beanDefinition);
+        addSingleton(beanName, bean);
+        return bean;
+    }
+</code></pre>
+<p>如上述代码所示，在SpringFramework中bean对象的创建就是一个相较于<code>new()</code>来讲复杂得多的场景。需要考虑对bean定义的修改，属性填充、初始化等等操作。</p>
+<h2 id="建造者模式示例">建造者模式示例</h2>
+<p>建造者模式针对的问题:</p>
+<ol>
+<li>在对象创建时，必要的参数较多，由构造函数传入会较为臃肿。</li>
+<li>成员变量之间有一定约束关系，比如三角形的两边之和大于第三边。或者说是依赖关系。</li>
+<li>如果希望成员变量是不可变的，那么其set方法自然不能暴漏在外。</li>
+<li>避免对象出现中间状态或者说无效状态，保证对象创建的原子性。在下文的示例中，如果使用set方式初始化，那么在全部参数被填充之前，对象是不可用的。这一现象在多线程中会导致未初始化的对象被用户获取的问题。</li>
+</ol>
+<p>以构建一个三角形作为示例。</p>
+<pre><code class="language-java">package com.caldarius.study.dp.builder;
+
+public class Triangle {
+    private int sideALength;
+    private String sideAName;
+
+    private int sideBLength;
+    private String sideBName;
+
+    private int sideCLength;
+    private String sideCName;
+
+    private Triangle(Builder builder) {
+        this.sideALength = builder.sideALength;
+        this.sideAName = builder.sideAName;
+        this.sideBLength = builder.sideBLength;
+        this.sideBName = builder.sideBName;
+        this.sideCLength = builder.sideCLength;
+        this.sideCName = builder.sideCName;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Triangle{&quot; +
+                &quot;sideALength=&quot; + sideALength +
+                &quot;, sideAName='&quot; + sideAName + '\'' +
+                &quot;, sideBLength=&quot; + sideBLength +
+                &quot;, sideBName='&quot; + sideBName + '\'' +
+                &quot;, sideCLength=&quot; + sideCLength +
+                &quot;, sideCName='&quot; + sideCName + '\'' +
+                '}';
+    }
+
+    public static class Builder{
+        private int sideALength;
+        private String sideAName;
+
+        private int sideBLength;
+        private String sideBName;
+
+        private int sideCLength;
+        private String sideCName;
+        public Triangle build(){
+            //名字不能为null，不能为&quot;&quot;
+            if (sideAName == null || sideAName.isEmpty() || sideBName == null || sideBName.isEmpty() || sideCName == null || sideCName.isEmpty()) {
+                throw new IllegalArgumentException(getSideNameLog());
+            }
+            //边长大于0
+            if (sideALength &lt;= 0 || sideBLength &lt;=0 || sideCLength &lt;=0) {
+                throw new IllegalArgumentException(getSideLengthLog());
+            }
+            //任意两边之和大于第三边
+            if (sideALength + sideBLength &lt;= sideCLength) {
+                throw new IllegalArgumentException(getSideLengthLog());
+            }
+            if (sideALength + sideCLength &lt;= sideBLength) {
+                throw new IllegalArgumentException(getSideLengthLog());
+            }
+            if (sideBLength + sideCLength &lt;= sideALength) {
+                throw new IllegalArgumentException(getSideLengthLog());
+            }
+            return new Triangle(this);
+            
+        }
+        //
+        public Builder  setSideALength(int sideALength) {
+            if (sideALength &lt;= 0) {
+                throw new IllegalArgumentException(&quot;边长不能小于等于0&quot;+sideALength);
+            }
+            this.sideALength = sideALength;
+            //链式编程 -&gt; 返回自身
+            return this;
+        }
+
+        public Builder setSideAName(String sideAName) {
+            if (sideAName == null || sideAName.isEmpty()) {
+                throw new IllegalArgumentException(&quot;名字不能为null，不能为\&quot;\&quot;&quot;+sideAName);
+            }
+            this.sideAName = sideAName;
+            return this;
+        }
+
+        public Builder setSideBLength(int sideBLength) {
+            if (sideBLength &lt;= 0) {
+                throw new IllegalArgumentException(&quot;边长不能小于等于0&quot; + sideBLength);
+            }
+            this.sideBLength = sideBLength;
+            return this;
+        }
+
+        public Builder setSideBName(String sideBName) {
+            if (sideBName == null || sideAName.isEmpty()) {
+                throw new IllegalArgumentException(&quot;名字不能为null，不能为\&quot;\&quot;&quot;+sideBName);
+            }
+            this.sideBName = sideBName;
+            return this;
+        }
+
+        public Builder setSideCLength(int sideCLength) {
+            if (sideCLength &lt;= 0) {
+                throw new IllegalArgumentException(&quot;边长不能小于等于0&quot;+sideCLength);
+            }
+            this.sideCLength = sideCLength;
+            return this;
+        }
+
+        public Builder setSideCName(String sideCName) {
+            if (sideCName == null || sideCName.isEmpty()) {
+                throw new IllegalArgumentException(&quot;名字不能为null，不能为\&quot;\&quot;&quot;+sideCName);
+            }
+            this.sideCName = sideCName;
+            return this;
+        }
+
+        private String getSideLengthLog() {
+            return &quot;sideALength=&quot; + sideALength +
+                    &quot;, sideCLength=&quot; + sideCLength +
+                    &quot;, sideBLength=&quot; + sideBLength;
+        }
+        private String getSideNameLog() {
+            return &quot;sideAName=&quot; + sideAName +
+                    &quot;, sideCName=&quot; + sideCName +
+                    &quot;, sideBName=&quot; + sideBName;
+        }
+    }
+
+    public static void main(String[] args) {
+        Triangle triangle = new Builder()
+                .setSideALength(3)
+                .setSideAName(&quot;a&quot;)
+                .setSideBLength(4)
+                .setSideBName(&quot;b&quot;)
+                .setSideCLength(5)
+                .setSideCName(&quot;C&quot;).build();
+        System.out.println(triangle);
+
+        Triangle triangle2 = new Builder()
+                .setSideALength(1)
+                .setSideAName(&quot;a&quot;)
+                .setSideBLength(2)
+                .setSideBName(&quot;b&quot;)
+                .setSideCLength(3)
+                .setSideCName(&quot;C&quot;).build();
+    }
+}
+/*
+output:
+Triangle{sideALength=3, sideAName='a', sideBLength=4, sideBName='b', sideCLength=5, sideCName='C'}
+Exception in thread &quot;main&quot; java.lang.IllegalArgumentException: sideALength=1, sideCLength=3, sideBLength=2
+ */
+</code></pre>
+<h2 id="区别与联系">区别与联系</h2>
+<p>从上文的代码示例可以直观感觉到，相对于工厂模式创建不同但是相关类型的对象，这里的复杂度我认为主要是创建什么类型的对象，以及需要进行什么样的处理。</p>
+<p>建造者模式更多聚焦于某一种类型创建的复杂度，主要体现在初始化的参数上。</p>
+<p>二者之间的区别是工厂更多关注创建的流程，建造者更多关注具体的细节。</p>
+<p>网上有一个经典的例子很好地解释了两者的区别。<br>
+顾客走进一家餐馆点餐，我们利用工厂模式，根据用户不同的选择，来制作不同的食物，比如披萨、汉堡、沙拉。对于披萨来说，用户又有各种配料可以定制，比如奶酪、西红柿、起司，我们通过建造者模式根据用户选择的不同配料来制作披萨。</p>
+<p>建议从要解决的问题出发，灵活选择模式或者创造自己的模式。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F%E7%A4%BA%E4%BE%8B">工厂模式示例</a></li>
+<li><a href="#%E5%BB%BA%E9%80%A0%E8%80%85%E6%A8%A1%E5%BC%8F%E7%A4%BA%E4%BE%8B">建造者模式示例</a></li>
+<li><a href="#%E5%8C%BA%E5%88%AB%E4%B8%8E%E8%81%94%E7%B3%BB">区别与联系</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://caldarius.github.io/post/hello-gridea/">
+              <h3 class="post-title">
+                Hello Gridea
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://caldarius.github.io//atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

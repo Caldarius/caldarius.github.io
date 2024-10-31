@@ -1,0 +1,2160 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>14Stream | Caldarius</title>
+<link rel="shortcut icon" href="https://caldarius.github.io//favicon.ico?v=1730380932353">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://caldarius.github.io//styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="14Stream | Caldarius - Atom Feed" href="https://caldarius.github.io//atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="“集合优化了对象的存储。而流（stream）与对象的成批处理有关。”
+流是一个与任何特定的存储机制都没有关系的元素序列。事实上，我们说流“没有存储”。
+不同于在集合中遍历元素，使用流的时候，我们是从一个管道中抽取元素，并对它进行操作。这些管..." />
+    <meta name="keywords" content="Java,读书笔记" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://caldarius.github.io/">
+  <img class="avatar" src="https://caldarius.github.io//images/avatar.png?v=1730380932353" alt="">
+  </a>
+  <h1 class="site-title">
+    Caldarius
+  </h1>
+  <p class="site-description">
+    世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活。
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              14Stream
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-10-23
+              </span>
+              <span>
+                57 min read
+              </span>
+              
+                <a href="https://caldarius.github.io/tag/java/" class="post-tag">
+                  # Java
+                </a>
+              
+                <a href="https://caldarius.github.io/tag/notes/" class="post-tag">
+                  # 读书笔记
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://caldarius.github.io//post-images/14stream.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>“集合优化了对象的存储。而流（stream）与对象的成批处理有关。”</p>
+<p>流是一个与任何特定的存储机制都没有关系的元素序列。事实上，我们说流“没有存储”。</p>
+<p>不同于在集合中遍历元素，使用流的时候，我们是从一个管道中抽取元素，并对它进行操作。这些管道通常会被串联到一起，形成这个流上的一个操作管线。</p>
+<p>大多数的时候，我们将对象存储在一个集合中是为了处理它们，所以你会发现，自己的编程重点将从集合转向流。</p>
+<p>流的一个核心优点是，它能使我们的程序更小，也更好理解。当配合流使用的时候，lambda表达式和方法引用就发挥出威力了。</p>
+<p>例如，假设我们想按照有序的方式显示随机选择的5~20范围内、不重复的int数。因为要对它们进行排序，所以我们会把注意力放在选择一个有序的几何上，并基于这样的集合来解决问题。但是借助流，只需要说明想做什么即可，开始了声明式编程：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Random;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/18
+ * @description:
+ */
+public class Randoms {
+    public static void main(String[] args) {
+        new Random(34)
+                //ints()方法会生成一个流，两参数的版本可以设置生成值的上下界
+                .ints(5,20)
+                //这里使用中间流操作distinct()去掉重复的值
+                .distinct()
+                //再使用limit()选择前七个值
+                .limit(7)
+                //然后告诉它希望元素是有序的
+                .sorted()
+                //最后，想显示每一个条目，使用了foreach()，它会根据我们传递的函数，
+            	//在每个流对象上执行一个操作。这里传递了方法引用。
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+6
+7
+9
+13
+16
+17
+19
+*/
+
+</code></pre>
+<p>在<code>Randoms.java</code>中没有声明任何变量。流可以对有状态的系统建模，而不需要使用赋值或者可变数据，这一点会非常有用。</p>
+<p>声明式编程是一种编程风格，我们说明想要完成什么，而不是指明怎么做。这种清晰的表达是使用流的最有说服力的原因。</p>
+<p>用集合存储，循环语句遍历集合的迭代方式称为外部迭代。而在Randoms.java中，我们看不到任何这样的机制，所以被称为内部迭代。</p>
+<p>内部迭代是流编程的一个核心特征。</p>
+<p>内部迭代产生的代码不仅可读性好，而且容易利用多处理器；通过放宽对具体迭代的方式的控制，我们可以将其交给某种并行化机制。（进阶卷第五章。）</p>
+<blockquote>
+<p>流的另一个重要方面是惰性求值，这意味着他们只在绝对必要时才会被求值。我们可以把流想象为一个“延迟列表”。因为延迟求值，所以流使我们可以表示非常大的序列，而不用考虑内存问题。</p>
+</blockquote>
+<p>这一点有点重要的，在数据日益增多的年代。</p>
+<h2 id="141java8对流的支持">14.1	Java8对流的支持</h2>
+<p>对于形如Random这样简单的例子中，只需要添加更多的方法即可。最大的挑战来源于使用了接口的库，最终设计者使用了默认方法来完成对流的支持。这些操作可分为三种类型：创建流、修改流元素（中间操作）和消费流元素（终结操作）。消费流元素往往意味着收集一个流的元素（通常是将其放进某个集合）。</p>
+<h2 id="142流的创建">14.2	流的创建</h2>
+<p>使用Stream.of()，可以轻松地将一组条目变成一个流。</p>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/18
+ * @description:
+ */
+public class StreamOf {
+    public static void main(String[] args) {
+        Stream.of(
+                new Bubble(1),new Bubble(2),new Bubble(3)
+        ).forEach(System.out::println);
+
+        Stream.of(&quot;We &quot;,&quot;are &quot;,&quot;A-soul, &quot;,&quot;sing &quot;,&quot;with &quot;,&quot;me!&quot;)
+                .forEach(System.out::print);
+    }
+}
+/*
+Output:
+Bubble(1)
+Bubble(2)
+Bubble(3)
+We are A-soul, sing with me!
+*/
+</code></pre>
+<p>对于每个Collection来说，都可以用stream()来生成一个流：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.*;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/18
+ * @description:
+ */
+public class CollectionToStream {
+    public static void main(String[] args) {
+        List&lt;Bubble&gt; bubbles = Arrays.asList(
+                new Bubble(1),new Bubble(2),new Bubble(3)
+        );
+        System.out.println(
+                //在创建了一个List之后，只需要调用一下stream()这个所有集合类都有的方法就可以创建一个流
+                bubbles.stream()
+                        //map()操作接受流中的每个元素，在其上应用一个操作来创建一个新的元素，然后将这个新的元素沿着流继续传递下去。普通的map接受对象并生成对象，但是当希望输出流持有的是数值类型的值的时候，map()还有一组特殊的版本。这里的mapInt()将一个对象流转变为了一个包含Integer地IntStream。对于Float和Double，也有名字类似的操作。
+                        .mapToInt(b -&gt; b.i)
+                        .sum()
+        );
+
+        Set&lt;String&gt; stringSet = new HashSet&lt;&gt;(Arrays.asList(
+                &quot;We are A-soul, sing with me!&quot;.split(&quot; &quot;)
+        ));
+        stringSet.stream()
+                .map(x -&gt; x + &quot; &quot;)
+                .forEach(System.out::print);
+        System.out.println();
+    
+        Map&lt;String,Double&gt; map = new HashMap&lt;&gt;();
+        map.put(&quot;pi&quot; , 3.14159);
+        map.put(&quot;e&quot; , 2.718);
+        //为了从Map集合生成一个流，首先调用了一个entrySet()来生成一个对象流，其中每个对象都饱含着一个键和与其相关联的值，然后再使用getKey()和getValue()将其分开。
+        map.entrySet().stream().map(e -&gt; e.getKey() + &quot; : &quot; + e.getValue()).forEach(System.out::println);
+
+    }
+}
+/*
+Output:
+6
+with are me! A-soul, sing We
+e : 2.718
+pi : 3.14159
+*/
+</code></pre>
+<h3 id="1421随机数流">14.2.1	随机数流</h3>
+<p>Random类已经得到了增强，有一组可以生成流的方法：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Random;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/18
+ * @description:
+ */
+public class RandomGenerators {
+    //这个T出现的位置稍微有点诡异嗷，你们静态类都这么骚的嘛。。。
+    public static&lt;T&gt; void show(Stream&lt;T&gt; stream) {
+        stream
+                .limit(4)
+                .forEach(System.out::println);
+        System.out.println(&quot;+++++++&quot;);
+    }
+
+    public static void main(String[] args) {
+        Random random = new Random(34);
+        //全随机
+        //boxed()流操作会自动将基本类型转换为对应包装器类型，方便show()能够接受这个流
+        show(random.ints().boxed());
+        show(random.longs().boxed());
+        show(random.doubles().boxed());
+
+        //控制上下边界
+        show(random.ints(10,20).boxed());
+        show(random.longs(50,100).boxed());
+        show(random.doubles(20,30).boxed());
+
+        //控制流大小
+        show(random.ints(2).boxed());
+        show(random.longs(2).boxed());
+        show(random.doubles(2).boxed());
+
+        //控制上下边界以及流大小
+        show(random.ints(3,3,9).boxed());
+        show(random.longs(3,12,22).boxed());
+        show(random.doubles(3,11.5,12.3).boxed());
+
+
+
+    }
+}
+/*
+Output:
+-1167027043
+-419156489
+1403888695
+-1549698677
++++++++
+-4679199665380035176
+347502940777447066
+-5462745394601655097
+-8851080134503474781
++++++++
+0.7406579108432636
+0.6355572211802512
+0.9195544072857654
+0.8162380681826771
++++++++
+15
+10
+10
+10
++++++++
+94
+59
+92
+89
++++++++
+27.665513893267452
+25.731617742628153
+24.329712582571936
+26.79824204052263
++++++++
+504567591
+-1942394330
++++++++
+499554011265826960
+-9043429876051918953
++++++++
+0.43264512973348723
+0.6179190543130938
++++++++
+6
+4
+4
++++++++
+16
+15
+12
++++++++
+12.162698058155284
+12.145442409430226
+11.962197131927406
++++++++
+*/
+</code></pre>
+<p>我们可以使用Random来创建一个可以用以提供任何一组对象的Supplier。</p>
+<pre><code class="language-java">package streams;
+
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/18
+ * @description:
+ */
+public class RandomWords implements Supplier {
+    List&lt;String&gt; words = new ArrayList&lt;&gt;();
+    Random random = new Random(34);
+    //构造方法，完成words的初始化
+    RandomWords(String fname) throws IOException {
+        List&lt;String&gt; lines = Files.readAllLines(Paths.get(fname));
+        //跳过第行，在文件中第一行是注释
+        for (String line : lines.subList(1,lines.size())){
+            for (String word: line.split(&quot;[ .?,]+&quot;))
+                words.add(word.toLowerCase());
+        }
+    }
+    @Override
+    public String get() {
+        return words.get(random.nextInt(words.size()));
+    }
+
+    @Override
+    public String toString() {
+        return words.stream()
+                .collect(Collectors.joining(&quot; &quot;));
+    }
+
+    public static void main(String[] args) throws IOException {
+        System.out.println(
+                Stream.generate(new RandomWords(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;))
+                        .limit(10)
+                        .collect(Collectors.joining(&quot; &quot;))
+        );
+    }
+}
+//Output:leads so uncontaminated cheese so of certainly that shop is
+</code></pre>
+<h3 id="1422int类型的区间范围">14.2.2	int类型的区间范围</h3>
+<p>IntStream提供了一个range()方法，可以生成一个流——由int值组成的序列。这在编写循环时非常方便：</p>
+<pre><code class="language-java">package streams;
+
+import static java.util.stream.IntStream.range;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/18
+ * @description:
+ */
+public class Ranges {
+    public static void main(String[] args) {
+        //传统方式
+        int result = 0;
+        for (int i =10;i&lt;20;i++) {
+            result += i;
+        }
+        System.out.println(result);
+
+        result = 0;
+        
+        //创建了一个range()，并且将其变为一个可以用在for-in语句中的数组
+        for (int i :range(10,20).toArray())
+            result += 1;
+        System.out.println(result);
+        
+        //这是目前最好的实现方法
+        System.out.println(range(10,20).sum());
+    }
+}
+</code></pre>
+<p>有点像python靠拢的感觉了，或许之后学习其他主流语言的时候会更轻松一些。</p>
+<h3 id="1423generate">14.2.3	generate()</h3>
+<p>RandomWords.java用到了Supplier<T>和Stream.generate()。下面是第二个示例：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class Generator implements Supplier&lt;String&gt; {
+    Random random = new Random(34);
+    char[] letters = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;.toCharArray();
+    @Override
+    public String get() {
+        //使用Random.nextInt()来选择字母表中的大写字母。参数告诉它可以接受的最大随机数，这样就不会超出边界了
+        return &quot;&quot; + letters[random.nextInt(letters.length)];
+    }
+
+    public static void main(String[] args) {
+        String word = Stream.generate(new Generator())
+                .limit(30)
+                .collect(Collectors.joining());
+        System.out.println(word);
+    }
+}
+</code></pre>
+<p>如果想创建一个完全由相同的对象组成的流，只需要将一个生成这些对象的lambda表达式传给generate()：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class Duplicator {
+    public static void main(String[] args) {
+        Stream.generate(() -&gt; &quot;duplicate&quot;)
+                .limit(3)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+duplicate
+duplicate
+duplicate
+*/
+</code></pre>
+<h3 id="1424iterate">14.2.4	iterate()</h3>
+<p>Stream.iterate()从一个种子开始（第一个参数），然后将其传给第二个参数所引用的方法，其结果被添加到这个流上，并且保存下来作为下一次iterate()调用的第一个参数，以此类推。我们可以通过迭代生成一个斐波那契数列：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class Fibonacci {
+    //iterate()只会记住结果(result),所以这里用了x来记住另一个元素。x和i构成了闭包。
+    int x = 1;
+    Stream&lt;Integer&gt; numbers() {
+        //0是第一个种子，lambda表达式是第二个参数。0是初始值，lambda表达式是递推式。
+        return Stream.iterate(0,i -&gt;{
+            int result = x + i;
+            x = i;
+            return result;
+        });
+    }
+
+    public static void main(String[] args) {
+        new Fibonacci().numbers()
+                //skip()会直接丢弃由参数指定的相应数目的流元素。
+                .skip(20)
+                .limit(10)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+6765
+10946
+17711
+28657
+46368
+75025
+121393
+196418
+317811
+514229
+*/
+</code></pre>
+<h3 id="1425流生成器">14.2.5	流生成器</h3>
+<p>在生成器（Builder）设计模式中，我们创建一个生成器对象，为它提供多段构造信息，最后执行“生成”（Build）动作。Stream库提供了这样一个Builder。这里回顾一下读取文件并将其转化为单词流的过程：</p>
+<pre><code class="language-java">package streams;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class FileToWordsBuilder {
+    Stream.Builder&lt;String&gt; builder = Stream.builder();
+    public FileToWordsBuilder(String filePath) throws IOException {
+        //在构造器中完成了对builder的初始化，但是并没有调用build，这意味着还可以继续添加，如果希望这个类更完整的话应该加入一个flag来查看build是否被调用，再加入另一个方法继续添加单词。如果在调用build()之后还尝试向Stream.Builder中添加单词，则会产生异常。
+        Files.lines(Paths.get(filePath))
+                .skip(1)
+                .forEach(line -&gt; {
+                    for (String w : line.split(&quot;[ .?,]]+&quot;))
+                        builder.add(w);
+                });
+    }
+    Stream&lt;String&gt; stream() {return builder.build(); }
+
+    public static void main(String[] args) throws IOException {
+        new FileToWordsBuilder(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;).stream()
+                .limit(7)
+                .map(w -&gt; w+&quot; &quot;)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+Not much of a cheese shop really, is it? 
+Finest in the district, sir. 
+And what leads you to that conclusion? 
+Well, it's so clean. 
+It's certainly uncontaminated by cheese. 
+*/
+</code></pre>
+<h3 id="1426arrays">14.2.6	Arrays</h3>
+<p>Arrays类中包含了名为stream()的静态方法，可以将数组转化为流。可以重写interface/MetalWork.java中的main，创建一个流并在每一个元素上应用execute()</p>
+<pre><code class="language-java">package streams;
+
+import onjava.Operation;
+
+import java.util.Arrays;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class MetalWork2 {
+    public static void main(String[] args) {
+        Arrays.stream(new Operation[] {
+                () -&gt; Operation.show(&quot;Heat&quot;),
+                () -&gt; Operation.show(&quot;Hammer&quot;),
+                () -&gt; Operation.show(&quot;Twist&quot;),
+                () -&gt; Operation.show(&quot;Anneal&quot;),
+        }).forEach(Operation::execute);
+    }
+}
+/*
+Output:
+Heat
+Hammer
+Twist
+Anneal
+*/
+</code></pre>
+<p>stream()方法也可以生成IntStream、LongStream和DoubleStream。</p>
+<p>stream()，还有一个三参的版本，额外的两个参数分别标识开始和结束的位置，左闭右开。</p>
+<h3 id="1427正则表达式">14.2.7	正则表达式</h3>
+<p>java的正则表达式（regular express）会在18章介绍。</p>
+<p>Java8向java.until.regex.Pattern类中加入了一个新方法splitAsStream()，它能接受一个字符序列，并且根据我们传入的公式将其分割为一个流。这里有一个约束：splitAsStream()的输入应该是一个CharSequence，所以我们不能将一个流传到SplitAsStream()中。</p>
+<p>下面，我们先使用流将文件转入一个单独的String，然后再使用正则表达式将这个String切割到一个单词流中：</p>
+<pre><code class="language-java">package streams;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class FileToWordsRegexp {
+    private String all;
+
+    public FileToWordsRegexp(String filePath) throws IOException {
+        this.all = Files.lines(Paths.get(filePath))
+                .skip(1)
+                .collect(Collectors.joining(&quot; &quot;));
+    }
+    public Stream&lt;String&gt; stream() {
+        return Pattern.compile(&quot;[ ,.?]+&quot;).splitAsStream(all);
+    }
+
+    public static void main(String[] args) throws IOException {
+        FileToWordsRegexp fileToWordsRegexp = new FileToWordsRegexp(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;);
+        fileToWordsRegexp.stream()
+                .limit(7)
+                .map(w -&gt; w+&quot; &quot;)
+                .forEach(System.out::print);
+        System.out.println(&quot;\n&quot;);
+        fileToWordsRegexp.stream()
+                .skip(7)
+                .limit(2)
+                .map(w -&gt; w+&quot; &quot;)
+                .forEach(System.out::print);
+    }
+}
+/*
+Output:
+Not much of a cheese shop really 
+
+is it
+*/
+</code></pre>
+<p>构造器读取文件中的所有行，转到了一个单独的String中。现在我们可以多次调用stream()来得到一个流。但是这里也有不足，整个文件都要存储在内存中。在大部分去情况下，这可能不是问题，但是会导致我们无法利用流的以下优势：</p>
+<ol>
+<li>不需要存储，虽然需要一部分内部存储。</li>
+<li>惰性求值。</li>
+</ol>
+<p>后面将解决这个问题。</p>
+<p>（需要对比一下之前几次的操作，看看有什么不一样的地方）</p>
+<h2 id="143中间操作">14.3	中间操作</h2>
+<p>这些操作从一个流中接收对象 ，并将对象作为另一个流送出后端，以连接到其他操作。</p>
+<h3 id="1431跟踪与测试">14.3.1	跟踪与测试</h3>
+<p>peek()操作就是用来辅助调试的。它允许我们查看流对象而不修改它们：</p>
+<pre><code class="language-java">package streams;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class Peeking {
+    public static void main(String[] args) throws Exception {
+        FileToWords.stream(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;)
+                .skip(21)
+                .limit(4)
+                .map(w -&gt; w + &quot; &quot;)
+                //peek()接受一个遵循Consumer函数式接口的函数，这样的函数没有返回值，也就不可能用不同的对象替换掉流中的对象。我们只能看看这些对象。
+                .peek(System.out::print)
+                .map(String::toLowerCase)
+                .forEach(System.out::print);
+    }
+}
+//Well well it it s s so so
+</code></pre>
+<h3 id="1432对流元素进行排序">14.3.2	对流元素进行排序</h3>
+<p>我们在Randoms.java中看到过以默认的比较方式使用sorted()进行排序的情况。还有一种接受Comparator参数的sorted()形式：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Comparator;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class SortedComparator {
+    public static void main(String[] args) throws Exception {
+        FileToWords.stream(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;)
+                .skip(10)
+                .limit(10)
+                .sorted(Comparator.reverseOrder())
+                .map(w -&gt; w + &quot; &quot;)
+                .forEach(System.out::print);
+    }
+}
+//Output:you what to the that sir leads in district And 
+</code></pre>
+<h3 id="1433移除元素">14.3.3	移除元素</h3>
+<ul>
+<li>distinct()：在Randoms.java中，distinct()移除了流中的重复元素。与创建一个Set来消除重复元素来讲，使用distinct()要省力得多。</li>
+<li>fileter(Predicate)：过滤操作只保留符合特定条件的元素，也就是传给参数，结果为true的那些元素。</li>
+</ul>
+<p>在以下示例中，过滤函数isPrime()会检测素数：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.LongStream;
+
+import static java.util.stream.LongStream.iterate;
+import static java.util.stream.LongStream.rangeClosed;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class Prime {
+    public static boolean isPrime(long n) {
+        //rangeClosed()包含了上界值。会遍历从2到上界值之间的所有整数。
+        return rangeClosed(2,(long)Math.sqrt(n))
+        //如果没有任何一个取余操作结果为0，则noneMatch()操作返回true。如果有任何一个计算结果等于0，则返回false。noneMatch()会在第一次失败之后推出，而不会吧后面的所有计算都尝试一遍。
+                .noneMatch(i -&gt; n%i ==0);
+    }
+    public LongStream numbers() {
+        //生成2到无穷个整数，然后留下素数
+        return iterate(2,i -&gt; i + 1)
+                .filter(Prime::isPrime);
+    }
+
+    public static void main(String[] args) {
+        new Prime().numbers()
+                .limit(10)
+                .forEach(n -&gt; System.out.format(&quot;%d &quot;,n));
+        System.out.println();
+        new Prime().numbers()
+                .skip(90)
+                .limit(10)
+                .forEach(n -&gt; System.out.format(&quot;%d &quot;,n));
+    }
+}
+/*
+Output:
+2 3 5 7 11 13 17 19 23 29
+467 479 487 491 499 503 509 521 523 541
+*/
+</code></pre>
+<h3 id="1434将函数应用于每个流元素">14.3.4	将函数应用于每个流元素</h3>
+<ul>
+<li>map(Function)：将Function应用于输入流中的每个对象，结果作为输出流继续传递。</li>
+<li>mapToInt(ToIntFunction)：同上，不过结果放在一个IntStream中。</li>
+<li>mapToLong……</li>
+<li>mapToDouble……</li>
+</ul>
+<p>这里我们将不同的Function映射（map()，map本身就是映射的意思）到了一个由String组成的流中。</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class FunctionMap {
+    static String[] elements = {
+            &quot;12&quot; , &quot; &quot; , &quot;23&quot; , &quot;45&quot;
+    };
+    static Stream&lt;String&gt; testStream() {
+        return Arrays.stream(elements);
+    }
+    static void test(String descr , Function&lt;String,String&gt; function) {
+        System.out.println(&quot;---( &quot;+descr + &quot; )---&quot;);
+        testStream()
+                .map(function)
+                .forEach(System.out::println);
+    }
+
+    public static void main(String[] args) {
+        test(&quot;add brackets&quot;,s -&gt; &quot;[&quot; + s + &quot;]&quot;);
+
+        test(&quot;Increment&quot;,s-&gt;{
+            //如果这个字符串不能不能被表示为Integer，则会抛出NumberFormatException，然后将原始的数据放入输出流中
+            try {
+                return Integer.parseInt(s) + 1+&quot; &quot;;
+            } catch (NumberFormatException e) {
+                return s;
+            }
+        });
+
+        test(&quot;Replace&quot;,s -&gt; s.replace(&quot;2&quot;,&quot;9&quot;));
+
+        test(&quot;Take last digit&quot;,s-&gt; s.length() &gt; 0 ?
+                s.charAt(s.length() -1) + &quot; &quot; : s);
+
+    }
+}
+/*
+Output:---( add brackets )---
+[12]
+[ ]
+[23]
+[45]
+---( Increment )---
+13
+
+24
+46
+---( Replace )---
+19
+
+93
+45
+---( Take last digit )---
+2
+
+3
+5
+*/
+</code></pre>
+<p>在上面的例子中，map()将一个String映射到了另一个String上，但是没有理由要求生成的类型必须与输入的类型相同，所以可以在这里改变这个映射的规则：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+class Numbered {
+    final int n;
+    Numbered(int n) { this.n = n; }
+
+    @Override
+    public String toString() {
+        return &quot;Numbered(&quot; + n + &quot;)&quot;;
+    }
+}
+public class FunctionMap2 {
+    public static void main(String[] args) {
+        Stream.of(1,5,7,9,11,13)
+                //接受的是int，然后使用构造器Numbered::new将其转变为Numbered
+                //签名匹配上就行，其他不用关心。I匹配int，O匹配Numbered
+                .map(Numbered::new)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+Numbered(1)
+Numbered(5)
+Numbered(7)
+Numbered(9)
+Numbered(11)
+Numbered(13)
+*/
+
+</code></pre>
+<p>如果Function生成的结果是某种数值类型，就必须使用相应的mapTo操作来代替。这一点令人感到遗憾，Java的设计者们没有在这门语言设计之初就努力消除基本类型。</p>
+<p>有自动装箱和拆箱以及包装类型感觉还好吧。</p>
+<h3 id="1435在应用map期间组合流">14.3.5	在应用map()期间组合流</h3>
+<p>假设有一个由传入元素组成的流，我们在其上应用一个map()函数，这个函数有一些功能能上的独特优势，但是存在一个问题：它生成的是一个流。我们想要的是一个由<strong>元素</strong>组成的流，但是生成了一个由<strong>元素流</strong>组成的流。他将流经自己的元素输出为了一个流，所以需要一个方法来把它拉回去，变成元素。</p>
+<p>flatMap会做两件事：接受生成流的函数，并将其应用于传入元素，然后将每个流扁平化处理，将其展开为元素。所以传出来的就是元素了。</p>
+<ul>
+<li>flaMap(Function)：当Function生成的是一个流时使用。</li>
+<li>flaMapToInt(Funcation)：当Function生成的是一个IntStream时使用。</li>
+<li>flaMapToFloat(Funcation)……</li>
+<li>flaMapToDouble(Funcation)……</li>
+</ul>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class StreamOfStreams {
+    public static void main(String[] args) {
+        Stream.of(1,2,3)
+                .map(i -&gt; Stream.of(&quot;Gonzo&quot;,&quot;Kermit&quot;,&quot;Beaker&quot;))
+                .map(e -&gt; e.getClass().getName())
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+java.util.stream.ReferencePipeline$Head
+java.util.stream.ReferencePipeline$Head
+java.util.stream.ReferencePipeline$Head
+*/
+</code></pre>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class FlatMap {
+    public static void main(String[] args) {
+        Stream.of(1,2,3)
+                .flatMap(i-&gt;Stream.of(&quot;Gonzo&quot;,&quot;Kermit&quot;,&quot;Beaker\n&quot;))
+                .forEach(System.out::print);
+    }
+}
+/*
+Output:
+GonzoKermitBeaker
+GonzoKermitBeaker
+GonzoKermitBeaker
+*/
+</code></pre>
+<p>从这个映射返回的每个流都会被自动扁平化处理，展开为组成这个流的String元素。</p>
+<p>下面是另一个示例。我们从一个整数值组成的流开始，然后使用其中的每一个来创建很多随机数：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Random;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class StreamOfRandoms {
+    static Random random = new Random(34);
+
+    public static void main(String[] args) {
+        Stream.of(1,2,3,4,5)
+                .flatMapToInt(i -&gt;
+                        IntStream.concat(
+                        random.ints(0,100).limit(i),
+                        IntStream.of(-1)
+                ))
+                .forEach(n -&gt;System.out.format(&quot;%d &quot;,n));
+    }
+}
+//Output:26 -1 3 47 -1 9 13 72 -1 66 49 85 47 -1 5 89 67 97 43 -1
+</code></pre>
+<p>再来看一下将一个文件分解为单词流的人物。我们曾经写过的FileToWordsRegexp.java存在一个问题，就是需要将整个文件都读入到一个由文本行组成的List中，这也需要对应的存储空间。而我们想创建的是一个不需要中间存储的单词流。这正是flatMap()所要解决的问题：</p>
+<pre><code class="language-java">package streams;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/19
+ * @description:
+ */
+public class FileToWords {
+
+    public static Stream&lt;String&gt; stream(String filePath)
+            throws Exception {
+        return Files.lines(Paths.get(filePath))
+                .skip(1) // First (comment) line
+                .flatMap(line -&gt;
+                        //这里的正则表达式模式使用的是\\W。\\W意味着一个“非单词字符”，而+意味着“一个或者多个”。小写的\\w指的是单词字符
+                        Pattern.compile(&quot;\\W+&quot;).splitAsStream(line));
+    }
+}
+
+</code></pre>
+<p>我们之前遇到的问题是，Pattern.compile().splitAsStream()生成的结果是一个流，这意味着在由文本行组成的输入流上调用map()，会生成一个由单词流组成的流，而我们需要的只是一个单词流而已。幸运的是，flatMap()可以将元素组成的流扁平化，将其变为由元素组成的一个简单的流。或者，我们可以使用String.split()，它会生成一个数组，然后使用Arrays.stream()将其转为流:</p>
+<pre><code class="language-java">.flatMap(line -&gt; Arrays.stream(line.split(&quot;\\W+&quot;)))
+</code></pre>
+<p>因为现在得到的是一个真正的流，所以每当我们想要一个新的流时，都必须从头创建，因为它无法复用。</p>
+<h2 id="144optional类型">14.4	Optional类型</h2>
+<p>在研究终结操作之前，我们必须考虑一个问题：如果我们向流中请求对象，但是流中什么都没有，这时会发生什么呢？我们喜欢把流连接成“快乐通道”（happy path，指的是没有异常或者错误发生的默认场景），并假设没有什么会中断它。然而在流中放入一个null就能轻松破坏掉它。有没有某种我们可以使用的对象，既可以作为流元素来占位，也可以在我们要找的元素不存在时有好地告知我们（也就是说，不会抛出异常）。</p>
+<p>这个想法被实现为OPtional类型。某些标准的流操作会返回Optional对象，因为它们不能确保所要的结果一定存在。这些流操作列举如下</p>
+<ul>
+<li>findFirst()返回包含第一个元素的OPtional。如果这个流为空，则返回Optional.empty。</li>
+<li>findAny()返回包含任何元素的Optional()，如果这个流为空，则返回Optional.empty。</li>
+<li>max()和min()分别返回包含流中最大值或者最小值Optional。如果这个流为空，则返回Optional.empty。</li>
+<li>reduce()的一个版本，它并不以一个“Identity”对象作为其第一个参数（在reduce()的其他版本中，“Identity”对象会成为默认结果，所以不会有结果为空的风险），它会将返回值包含在一个Optional中。</li>
+<li>对于数值化的流IntStream、LongStream和DoubleStream()，average()操作将其结果包在一个Optional中，以防流为空的情况。</li>
+</ul>
+<p>下面是所有这些操作在空流上的简单测试：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class OptionalsFromEmptyStreams {
+    public static void main(String[] args) {
+        //不是很理解&lt;String&gt;empty()这种写法，静态方法用泛型，后续到泛型再说。
+        //空流可以通过Stream.&lt;String&gt;empty()创建，如果只使用了Stream.empty()而没有任何上下文信息，那么Java不知道它应该是什么类型的，而这种语法解决了这个问题。
+        //如果编译器有足够的上下文信息那么它就能推断出empty()调用的类型：
+        Stream&lt;String&gt; stream = Stream.empty();
+        
+        System.out.println(Stream.&lt;String&gt;empty().findFirst());
+        System.out.println(Stream.&lt;String&gt;empty().findAny());
+        System.out.println(Stream.&lt;String&gt;empty().max(String.CASE_INSENSITIVE_ORDER));
+        System.out.println(Stream.&lt;String&gt;empty().min(String.CASE_INSENSITIVE_ORDER));
+        System.out.println(Stream.&lt;String&gt;empty().reduce((s1, s2) -&gt; s1+s2));
+        System.out.println(IntStream.empty().average());
+    }
+}
+/*
+Output:
+Optional.empty
+Optional.empty
+Optional.empty
+Optional.empty
+Optional.empty
+OptionalDouble.empty
+*/
+
+</code></pre>
+<p>这时不会因为流是空的而抛出异常，而是会得到一个Optional.empty()对象。Optional有一个toString()方法，可以显示有用信息。</p>
+<p>下面的示例演示了Optional的两个基本动作。我们接收到一个Optional时，首先要调用isPresent(),看看里面是不是有东西，如果有再使用get()来获取。</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Optional;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class OptionalBasics {
+    static void test(Optional&lt;String&gt; optionalString) {
+        if (optionalString.isPresent())
+            System.out.println(optionalString.get());
+        else
+            System.out.println(&quot;Nothing inside!&quot;);
+    }
+
+    public static void main(String[] args) {
+        test(Stream.of(&quot;Epithets&quot;).findFirst());
+        test(Stream.&lt;String&gt;empty().findFirst());
+    }
+}
+/*
+Output:
+Epithets
+Nothing inside!
+*/
+</code></pre>
+<h3 id="1441便捷函数">14.4.1	便捷函数</h3>
+<p>有很多便捷函数，可用于获取Optional中的数据，他们简化了上面“先检查再处理所包含对象”的过程。</p>
+<ul>
+<li>ifPresent(Consumer)：如果值存在，则用这个值来调用Consumer，否则什么都不做。</li>
+<li>orElse(OtherObject)：如果对象存在，则返回这个对象，否则返回OtherObject。</li>
+<li>orElseGet(Supplier)：如果对象存在，则返回这个对象，否则返回使用Supplier函数创建的替代对象。</li>
+<li>orElseThrow(Supplier)：如果对象存在，则返回这个对象，否则抛出一个使用Supplier函数创建的异常。</li>
+</ul>
+<p>下面演示一下这些便捷函数：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class Optionals {
+    static void basics(Optional&lt;String&gt; optionalString) {
+        if(optionalString.isPresent())
+            System.out.println(optionalString.get());
+        else
+            System.out.println(&quot;Nothing inside!&quot;);
+    }
+
+    static void ifPresent(Optional&lt;String&gt; optionalString) {
+        optionalString.ifPresent(System.out::println);
+    }
+    static void orElse(Optional&lt;String&gt; optionalString) {
+        System.out.println(optionalString.orElse(&quot;Nada&quot;));
+    }
+    static void orElseGet(Optional&lt;String&gt; optionalString) {
+        System.out.println(optionalString.orElseGet(() -&gt; &quot;Generated&quot;));
+    }
+    static void orElseThrow(Optional&lt;String&gt; optionalString) {
+        try {
+            System.out.println(optionalString.orElseThrow(
+                    () -&gt;new Exception(&quot;Supplied&quot;)
+            ));
+        } catch (Exception e) {
+            System.out.println(&quot;Caught&quot; + e);
+        }
+    }
+    //test()方法接受一个匹配所有示例方法的Consumer，可以避免代码重复。
+    static void test(String testName,
+                     Consumer&lt;Optional&lt;String&gt;&gt; consumerOptional) {
+        System.out.println(&quot; === &quot; + testName + &quot; === &quot;);
+        //通过accept()方法调用绑定的方法。
+        consumerOptional.accept(Stream.of(&quot;Epithets&quot;).findFirst());
+        consumerOptional.accept(Stream.&lt;String&gt;empty().findFirst());
+    }
+
+    public static void main(String[] args) {
+        test(&quot;basics&quot;,Optionals::basics);
+        test(&quot;ifPresent&quot;,Optionals::ifPresent);
+        test(&quot;orElse&quot;,Optionals::orElse);
+        test(&quot;orElseGet&quot;,Optionals::orElseGet);
+        test(&quot;orElseThrow&quot;,Optionals::orElseThrow);
+    }
+}
+/*
+Output:
+=== basics === 
+Epithets
+Nothing inside!
+ === ifPresent === 
+Epithets
+ === orElse === 
+Epithets
+Nada
+ === orElseGet === 
+Epithets
+Generated
+ === orElseThrow === 
+Epithets
+Caughtjava.lang.Exception: Supplied
+
+*/
+</code></pre>
+<h3 id="1442创建optional">14.4.2	创建Optional</h3>
+<p>当需要自己编写生成Optional代码时，有如下三种可以使用的静态方法。</p>
+<ul>
+<li>empty()：返回一个空的Optional。</li>
+<li>of(value)：如果已经知道这个value不是null，可以使用该方法将其包在一个Optional中。</li>
+<li>ofNullable(value)：如果不知道这个value是不是null，使用这个方法。如果value为null，它会自动返回Optional.empty，否则会将这个value包在一个Optional中。</li>
+</ul>
+<p>在以下示例中可以看到这些方法是如何工作的：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Optional;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class CreatingOptionals {
+    static void test(String testName, Optional&lt;String&gt; optionalString) {
+        System.out.println(&quot; === &quot; + testName + &quot; === &quot;);
+        //通过accept()方法调用绑定的方法。
+        System.out.println(optionalString.orElse(&quot;Null&quot;));
+    }
+
+    public static void main(String[] args) {
+        test(&quot;empty&quot;,Optional.empty());
+        test(&quot;of&quot;,Optional.of(&quot;Howdy&quot;));
+        try {
+            test(&quot;of&quot;,Optional.of(&quot;Howdy&quot;));
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        //ofNullable()可以优雅地处理null，所以它看起来是最安全的一个。
+        test(&quot;ofNullable&quot;,Optional.ofNullable(&quot;Hi&quot;));
+        test(&quot;ofNullable&quot;,Optional.ofNullable(null));
+    }
+}
+/*
+Output:
+ === empty ===
+Null
+ === of ===
+Howdy
+ === of ===
+Howdy
+ === ofNullable ===
+Hi
+ === ofNullable ===
+Null
+*/
+</code></pre>
+<h3 id="1443optional对象上的操作">14.4.3	Optional对象上的操作</h3>
+<p>有三种方法支持对Optional进行事后处理，如果你的流管线生成了一个Optional，你可以在最后再做一项处理。</p>
+<ul>
+<li>filter(Predicate)：将Predicate应用于Optional的内容，并返回其结果。如果Optional与Predicate的内容不匹配，则将其转换为empty。如果Optional本身已经是empty，则直接返回。</li>
+<li><code>map(Function)</code>：如果<code>Optional</code>不为<code>empty</code>，则将<code>Function</code>应用于<code>Optional</code>中包含的对象，并返回结果。否则传回<code>Optional.empty</code>。</li>
+<li><code>flatMap(Function)</code>：和 <code>map()</code>类似，但是所提供的映射函数会将结果包在<code>Optional</code>中，这样<code>flatMap()</code>最后就不会再做任何包装了。</li>
+</ul>
+<p>数值化的Optional上没有提供这些操作。</p>
+<p>对于普通的流filter()而言，如果Predicate返回false，它会将元素从流中删除。但是对于Optional.filter()而言，如果Predicate返回false，它不会删除元素，但是会将其转化为empty。下面这个示例探索了filter()的用法：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Arrays;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class OptionalFilter {
+    static String[] elements = {
+            &quot;Foo&quot;,&quot;&quot;,&quot;Bar&quot;,&quot;Baz&quot;,&quot;Bingo&quot;
+    };
+    static Stream&lt;String&gt; testStream() {
+        return Arrays.stream(elements);
+    }
+    static void test(String descr, Predicate&lt;String&gt; predicate) {
+        System.out.println(&quot; ---( &quot; + descr + &quot; )---&quot;);
+        //注意这里用了等号，所以最后一个元素在实际上会超出这个流，但是它会自动变成Optional.empty。
+        for(int i = 0; i &lt;= elements.length; i++) {
+            System.out.println(
+                    testStream()
+                            .skip(i)
+                            //获得剩余元素种地第一个，然后将其包裹在Optional中返回
+                            .findFirst()
+                            .filter(predicate));
+        }
+
+    }
+    public static void main(String[] args) {
+        test(&quot;true&quot;, str -&gt; true);
+        test(&quot;false&quot;, str -&gt; false);
+        test(&quot;str != \&quot;\&quot;&quot;, str -&gt; str != &quot;&quot;);
+        test(&quot;str.length() == 3&quot;, str -&gt; str.length() == 3);
+        test(&quot;startsWith(\&quot;B\&quot;)&quot;,
+                str -&gt; str.startsWith(&quot;B&quot;));
+    }
+}
+/*
+Output:
+ ---( true )---
+Optional[Foo]
+Optional[]
+Optional[Bar]
+Optional[Baz]
+Optional[Bingo]
+Optional.empty
+ ---( false )---
+Optional.empty
+Optional.empty
+Optional.empty
+Optional.empty
+Optional.empty
+Optional.empty
+ ---( str != &quot;&quot; )---
+Optional[Foo]
+Optional.empty
+Optional[Bar]
+Optional[Baz]
+Optional[Bingo]
+Optional.empty
+ ---( str.length() == 3 )---
+Optional[Foo]
+Optional.empty
+Optional[Bar]
+Optional[Baz]
+Optional.empty
+Optional.empty
+ ---( startsWith(&quot;B&quot;) )---
+Optional.empty
+Optional.empty
+Optional[Bar]
+Optional[Baz]
+Optional[Bingo]
+Optional.empty
+*/
+
+</code></pre>
+<p>类似于<code>map()</code>，<code>Optional.map()</code>会应用一个函数，但是在<code>Optional</code>的情况下，只有当<code>Optional</code>不为<code>empty</code>时，它才会应用这个映射函数。它也会提取<code>Optional</code>所包含的对象，并将其交给映射函数：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class OptionalMap {
+    static String[] elements = { &quot;12&quot;, &quot;&quot;, &quot;23&quot;, &quot;45&quot; };
+    static Stream&lt;String&gt; testStream() {
+        return Arrays.stream(elements);
+    }
+    static void test(String describe, Function&lt;String, String&gt; function) {
+        System.out.println(&quot; ---( &quot; + describe + &quot; )---&quot;);
+        for(int i = 0; i &lt;= elements.length; i++) {
+            System.out.println(
+                    testStream()
+                            .skip(i)
+                            .findFirst() 
+                            .map(function));
+        }
+    }
+    public static void main(String[] args) {
+
+        test(&quot;Add brackets&quot;, s -&gt; &quot;[&quot; + s + &quot;]&quot;);
+
+        test(&quot;Increment&quot;, s -&gt; {
+            try {
+                return Integer.parseInt(s) + 1 + &quot;&quot;;
+            } catch(NumberFormatException e) {
+                return s;
+            }
+        });
+
+        test(&quot;Replace&quot;, s -&gt; s.replace(&quot;2&quot;, &quot;9&quot;));
+
+        test(&quot;Take last digit&quot;, s -&gt; s.length() &gt; 0 ?
+                s.charAt(s.length() - 1) + &quot;&quot; : s);
+    }
+}
+/*
+Output:
+ ---( Add brackets )---
+Optional[[12]]
+Optional[[]]
+Optional[[23]]
+Optional[[45]]
+Optional.empty
+ ---( Increment )---
+Optional[13]
+Optional[]
+Optional[24]
+Optional[46]
+Optional.empty
+ ---( Replace )---
+Optional[19]
+Optional[]
+Optional[93]
+Optional[45]
+Optional.empty
+ ---( Take last digit )---
+Optional[2]
+Optional[]
+Optional[3]
+Optional[5]
+Optional.empty
+*/
+</code></pre>
+<p>映射函数的结果会被自动地包在一个<code>Optional</code>中。正如我们所看到的，遇到<code>Optional.empty</code>会直接通过，不在其上应用映射函数。</p>
+<p><code>Optional</code>的<code>flatMap()</code>被应用于已经会生成<code>Optional</code>的映射函数，所以<code>flatMap()</code>不会像<code>map()</code>那样把结果包在<code>Optional</code>中：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class OptionalFlatMap {
+    static String[] elements = { &quot;12&quot;, &quot;&quot;, &quot;23&quot;, &quot;45&quot; };
+    static Stream&lt;String&gt; testStream() {
+        return Arrays.stream(elements);
+    }
+    //参数太长的时候分层写或许会更清晰一点。
+    static void test(String descr,
+                     Function&lt;String, Optional&lt;String&gt;&gt; func) {
+        System.out.println(&quot; ---( &quot; + descr + &quot; )---&quot;);
+        for(int i = 0; i &lt;= elements.length; i++) {
+            System.out.println(
+                    testStream()
+                            .skip(i)
+                            .findFirst()
+                            .flatMap(func));
+        }
+    }
+    public static void main(String[] args) {
+
+        test(&quot;Add brackets&quot;,
+                //如果已经知道这个value不是null，可以使用Optional.of(value)将其包在一个Optional中。
+                s -&gt; Optional.of(&quot;[&quot; + s + &quot;]&quot;));
+
+        test(&quot;Increment&quot;, s -&gt; {
+            try {
+                return Optional.of(
+                        Integer.parseInt(s) + 1 + &quot;&quot;);
+            } catch(NumberFormatException e) {
+                return Optional.of(s);
+            }
+        });
+
+        test(&quot;Replace&quot;,
+                s -&gt; Optional.of(s.replace(&quot;2&quot;, &quot;9&quot;)));
+
+        test(&quot;Take last digit&quot;,
+                s -&gt; Optional.of(s.length() &gt; 0 ?
+                        s.charAt(s.length() - 1) + &quot;&quot;
+                        : s));
+    }
+}
+/*
+Output:
+---( Add brackets )---
+Optional[[12]]
+Optional[[]]
+Optional[[23]]
+Optional[[45]]
+Optional.empty
+ ---( Increment )---
+Optional[13]
+Optional[]
+Optional[24]
+Optional[46]
+Optional.empty
+ ---( Replace )---
+Optional[19]
+Optional[]
+Optional[93]
+Optional[45]
+Optional.empty
+ ---( Take last digit )---
+Optional[2]
+Optional[]
+Optional[3]
+Optional[5]
+Optional.empty
+*/
+</code></pre>
+<p>和<code>map()</code>类似，<code>flatMap()</code>会获得非<code>empty</code>的<code>Optional</code>中的对象，并将其交给映射函数。它们唯一的区别是，<code>flatMap()</code>不会将结果包在<code>Optional</code>中，因为这个事映射函数已经做了。在上面的示例中，我已经明确地在每个映射函数内做了包装，但显然<code>Optional.flatMap()</code>是为已经能够自己生成<code>Optional</code>的函数设计的。</p>
+<h3 id="1444由optional组成的流">14.4.4	由Optional组成的流</h3>
+<p>假设有一个可能会生成<code>null</code>值的生成器。如果使用这个生成器创建了一个流，我们自然想将这些元素包在<code>Optional</code>中。它看上去应该是这样的：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/22
+ * @description:
+ */
+public class Signal {
+    private final String msg;
+    public Signal(String msg) { this.msg = msg; }
+    public String getMsg() {return msg;}
+
+    @Override
+    public String toString() {
+        return &quot;Signal(&quot; + msg + &quot;)&quot;;
+    }
+    static Random rand = new Random(34);
+    public static Signal morse() {
+        switch(rand.nextInt(4)) {
+            case 1: return new Signal(&quot;dot&quot;);
+            case 2: return new Signal(&quot;dash&quot;);
+            default: return null;
+        }
+    }
+    public static Stream&lt;Optional&lt;Signal&gt;&gt; stream() {
+        //Stream.gengerate()方法用于生成一系列相同类型的对象。
+        return Stream.generate(Signal::morse)
+                .map(signal -&gt; Optional.ofNullable(signal));
+    }
+}
+</code></pre>
+<p>当使用这个流时，我们必须弄清楚如何获得<code>Optional</code>中的对象：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Optional;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class StreamOfOptionals {
+    public static void main(String[] args) {
+        Signal.stream()
+                .limit(10)
+                .forEach(System.out::println);
+        System.out.println(&quot; ---&quot;);
+        Signal.stream()
+                .limit(10)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+Optional[Signal(dash)]
+Optional.empty
+Optional[Signal(dot)]
+Optional[Signal(dash)]
+Optional[Signal(dash)]
+Optional.empty
+Optional.empty
+Optional[Signal(dot)]
+Optional[Signal(dash)]
+Optional[Signal(dash)]
+ ---
+Signal(dash)
+Signal(dot)
+Signal(dash)
+Signal(dash)
+Signal(dash)
+Signal(dash)
+*/
+</code></pre>
+<p>这里我使用了<code>filter()</code>，只保留非<code>empty</code>的<code>Optional</code>，然后通过<code>map()</code>调用<code>get()</code>来获得包在其中的对象。因为每种情况都需要我们来决定“没有值”的含义，所以我们通常需要针对每种应用采取不同的方法。</p>
+<h2 id="145终结操作">14.5	终结操作</h2>
+<p>这些操作接受一个流，并生成一个最终结果。它们不会再把任何东西发给某个后端的流。因此，终结操作总是我们在一个管线内可以做的最后一件事。</p>
+<ul>
+<li><code>toArray()</code>：将流元素转换到适当类型的数组中。</li>
+<li><code>toArray(generator)</code>：<code>generator</code>用于在特定情况下分配自己的数组存储。</li>
+</ul>
+<p>如果流操作生成的内容必须以数组形式使用，这就很有用了。例如，假设我们想获得随机数，同时希望以流的形式复用它们，这样我们每次得到的都是相同的流。我们可以将其保存在一个数组中，来实现这个目的。</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Arrays;
+import java.util.Random;
+import java.util.stream.IntStream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class RandInts {
+    private static int[] rints = new Random(34)
+            .ints(0,1000)
+            .limit(100)
+            .toArray();
+    public static IntStream rands() {
+        return Arrays.stream(rints);
+    }
+}
+</code></pre>
+<p>由100个0~1000范围内的<code>int</code>类型随机数组成的流，被转换成了一个数组，并存储在<code>rints</code>中，这样每次调用<code>rands()</code>就能重复获得相同的流了。</p>
+<h3 id="1452在每个流元素上应用某个终结操作">14.5.2	在每个流元素上应用某个终结操作</h3>
+<ul>
+<li><code>forEach(Consumer)</code>：这种用法我们已经看到过很多次了——以<code>System.out::println</code>作为<code>Consumer</code>函数。</li>
+<li><code>forEachOrdered(Consumer)</code>：这个版本确保<code>forEach</code>对元素的操作顺序是原始的流的顺序。</li>
+</ul>
+<p>（我认为这里深刻体现了函数是行为的抽象这一本质，传入每个元素需要做的事情）</p>
+<p>第一种形式被明确地设计为可以以任何顺序操作元素，这只有在引入<code>parallel()</code>操作时才有意义。我们在进入进阶卷第5章之前不会深入研究这个问题，不过可以先简单介绍一下：<code>parallel()</code>让Java尝试在多个处理器上执行操作。它可以做到这一点，正是因为使用了流——它可以将流分割为多个流（通常情况是，每个处理器一个流），并在不同的处理器上运行每个流。因为我们使用的是内部迭代，而不是外部迭代，所以这种情况是可能的。</p>
+<p>在你对看似简单的<code>parallel()</code>感到跃跃欲试之前，我要先提醒一下，它使用起来是相当复杂的，所以在进入进阶卷第5章之前，先不要着急。</p>
+<p>可以通过在一个示例中引入<code>parallel()</code>来了解<code>forEachOrdered(Consumer)</code>的作用和必要性：</p>
+<pre><code class="language-java">package streams;
+
+import static streams.RandInts.rands;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class ForEach {
+    static final int SIZE = 14;
+    public static void main(String[] args) {
+        rands().limit(SIZE)
+                .forEach(n -&gt; System.out.format(&quot;%d &quot;, n));
+        System.out.println();
+        rands().limit(SIZE)
+                .parallel()
+                .forEach(n -&gt; System.out.format(&quot;%d &quot;, n));
+        System.out.println();
+        rands().limit(SIZE)
+                .parallel()
+                .forEachOrdered(n -&gt; System.out.format(&quot;%d &quot;, n));
+    }
+}
+/*Output:
+126 403 347 309 113 772 666 749 385 947 305 489 767 697
+767 697 749 385 666 309 403 947 772 347 489 113 305 126
+126 403 347 309 113 772 666 749 385 947 305 489 767 697
+第二次运行:
+126 403 347 309 113 772 666 749 385 947 305 489 767 697 
+767 697 749 385 403 309 947 666 113 347 126 772 489 305 
+126 403 347 309 113 772 666 749 385 947 305 489 767 697
+*/
+</code></pre>
+<p>这里将<code>sz</code>（这里博主用了Size）分离出来，以便尝试不同的大小。然而，即使<code>sz</code>为<code>14</code>这个值，也已经产生有意思的结果了。在第一个流中，我们没有使用<code>parallel()</code>，所以结果的显示顺序就是它们从<code>rands()</code>中出现的顺序。第二个流引入了<code>parallel()</code>，即便是这么小的一个流，我们也可以看到输出的顺序和之前不一样了。这是因为有多个处理器在处理这个问题，而且如果多次运行这个程序，你会发现每一次的输出还会有所不同，原因在于多个处理器同时处理这个问题所带来的不确定性因素。</p>
+<p>最后一个流仍然使用了<code>parallel()</code>，但是又使用<code>forEachOrdered()</code>来强制结果回到原始的顺序。因此，对于非<code>parallel()</code>的流，使用<code>forEachOrdered()</code>不会有任何影响。</p>
+<h3 id="1453收集操作">14.5.3	收集操作</h3>
+<ul>
+<li><code>collect(Collector)</code>：使用这个<code>Collector</code>将流元素累加到一个结果集合中。</li>
+<li><code>collect(Supplier, BiConsumer, BiConsumer)</code>：和上面类似，但是<code>Supplier</code>会创建一个新的结果集合，第一个<code>BiConsumer</code>是用来将下一个元素包含到结果中的函数，第二个<code>BiConsumer</code>用于将两个值组合起来。</li>
+</ul>
+<p>我们仅仅看到了<code>Collectors</code>对象的几个示例。如果看一下<code>java.util.stream.Collectors</code>的文档，你会发现其中的一些对象相当复杂。例如，我们可以将流元素收集到任何特定种类的集合中。假设想把我们的条目最终放到一个<code>TreeSet</code>中，由此使它们总是有序的。在<code>Collectors</code>中没有特定的<code>toTreeSet()</code>方法，但是可以使用<code>Collectors.toCollection()</code>，并将任何类型的<code>Collection</code>的构造器引用传给它。下面的程序提取文件中的单词放到<code>TreeSet</code>中：</p>
+<pre><code class="language-java">package streams;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class TreeSetOfWords {
+    public static void main(String[] args) throws IOException {
+        Set&lt;String&gt; words2 =
+                Files.lines(Paths.get(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\TreeSetOfWords.java&quot;))
+                        .flatMap(s -&gt; Arrays.stream(s.split(&quot;\\W+&quot;)))
+                        //去掉所有的数字
+                        .filter(s -&gt; !s.matches(&quot;\\d+&quot;))
+                        //去除周围可能存在的任何空白
+                        .map(String::trim)
+                        //去除所有长度小于3的单词
+                        .filter(s -&gt; s.length() &gt; 2)
+                        .limit(100)
+                        .collect(Collectors.toCollection(TreeSet::new));
+        System.out.println(words2);
+
+    }
+}
+/*
+Output:
+[Arrays, Caldarius, Collectors, Created, Files, IDEA, IDEAProjectSpace, IOException, IntelliJ, ONJava8Study, OnJavaExample, Paths, Set, String, System, TreeSet, TreeSetOfWords, args, author, class, collect, date, description, file, filter, flatMap, get, import, java, length, limit, lines, main, map, matches, new, nio, out, package, println, public, split, src, static, stream, streams, throws, toCollection, trim, util, void, with, words2]
+*/
+</code></pre>
+<p>可以从某个流生成一个<code>Map</code>：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+
+//Pair
+class Pair {
+    //Pair是一个基本数据对象，保存着c和i的值
+    public final Character c;
+    public final Integer i;
+    Pair(Character c, Integer i) {
+        this.c = c;
+        this.i = i;
+    }
+    public Character getC() { return c; }
+    public Integer getI() { return i; }
+    @Override public String toString() {
+        return &quot;Pair(&quot; + c + &quot;, &quot; + i + &quot;)&quot;;
+    }
+}
+
+class RandomPair {
+    Random rand = new Random(34);
+    // 一个无限大的迭代器，指向随机生成的大写字母：
+    Iterator&lt;Character&gt; capChars = rand.ints(65,91)
+            .mapToObj(i -&gt; (char)i)
+            .iterator();
+    public Stream&lt;Pair&gt; stream() {
+        return rand.ints(100, 1000).distinct()
+                //生成一个Pair流，其中的Pair对象是由随机生成的大写字母与随机生成的100~1000的整数组成的
+                .mapToObj(i -&gt; new Pair(capChars.next(), i));
+    }
+}
+public class MapCollector {
+    public static void main(String[] args) {
+        Map&lt;Integer, Character&gt; map =
+                new RandomPair().stream()
+                        .limit(8)
+                        .collect(
+                                Collectors.toMap(Pair::getI, Pair::getC));
+        System.out.println(map);
+    }
+
+}
+//Output:{626=F, 643=O, 885=R, 247=H, 666=D, 667=V, 813=G, 605=F}
+</code></pre>
+<p>大多数情况下，如果看一下<code>java.util.stream.Collectors</code>，就能找到一个满足我们要求的预定义<code>Collector</code>。找不到的情况只是极少数，这时候可以使用<code>collect()</code>的第二种形式。下面的示例演示了第二种形式的基本情况：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.ArrayList;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class SpecialCollector {
+    public static void main(String[] args) throws Exception {
+        ArrayList&lt;String&gt; words =
+                FileToWords.stream(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;)
+                        //第一个参数表示收集的结果应该放在一个ArrayList中
+                        //第二个参数表示用add()方法将结果折叠到一个容器中
+                        /*
+                        compatible with the accumulator function. The combiner function must fold the elements from the second result container into the first result container.
+                        * combiner - 一个关联的、非干扰的、无状态的函数，接受两个部分结果容器并将它们合并，它必须与 accumulator 函数兼容。组合器函数必须将第二个结果容器中的元素折叠到第一个结果容器中。
+                        * 在事实上完成了第一个容器和第二个容器和合并。
+                        */
+                        .collect(ArrayList::new,
+                                ArrayList::add,
+                                ArrayList::addAll);
+        words.stream()
+                .filter(s -&gt; s.equals(&quot;cheese&quot;))
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+cheese
+cheese
+*/
+</code></pre>
+<h3 id="1454组合所有的流元素">14.5.4	组合所有的流元素</h3>
+<ul>
+<li><code>reduce(BinaryOperator)</code>：使用<code>BinaryOperator</code>来组合所有的流元素。因为这个流可能为空，所以返回的是一个<code>Optional</code>。</li>
+<li><code>reduce(identity, BinaryOperator)</code>：和上面一样，但是将<code>identity</code>用作这个组合的初始值。因此，即使这个流是空的，我们仍然能得到<code>identity</code>作为结果。</li>
+<li><code>reduce(identity, BiFunction, BinaryOperator)</code>：这个更复杂（所以我们不会介绍），但是之所以把它列在这里，是因为它可能更高效。可以通过组合显式的<code>map()</code>和<code>reduce()</code>操作来更简单地表达这样的需求。</li>
+</ul>
+<p>下面是一个有意设计的示例，用以演示<code>reduce()</code>：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Random;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+//frobnitz有“小零件”的意思
+class Frobnitz {
+    int size;
+    Frobnitz(int size) { this.size = size; }
+    @Override
+    public String toString() {
+        return &quot;Frobnitz(&quot; + size + &quot;)&quot;;
+    }
+    // 生成器：
+    static Random rand = new Random(34);
+    static final int BOUND = 100;
+    static Frobnitz supply() {
+        return new Frobnitz(rand.nextInt(BOUND));
+    }
+}
+public class Reduce {
+    public static void main(String[] args) {
+        //我们可以把一个方法引用传给Stream.generate()，因为它与Supplier&lt;Frobnitz&gt;是签名兼容的（这种签名兼容叫作结构一致性）。
+        Stream.generate(Frobnitz::supply)
+                .limit(10)
+                .peek(System.out::println)
+                //没有提供作为初始值的第一个参数，意味着我们调用的是一个会生成Optional的版本。lambda表达式中的第一个参数fr0是上次调用这个reduce()时带回的结果，第二个参数fr1是来自流中的新值。所有的流元素被这样一个个地拼接起来。
+                .reduce((fr0, fr1) -&gt; fr0.size &lt; 50 ? fr0 : fr1)
+                .ifPresent(System.out::println);
+    }
+}
+/*
+Output:
+Frobnitz(26)
+Frobnitz(3)
+Frobnitz(47)
+Frobnitz(9)
+Frobnitz(13)
+Frobnitz(72)
+Frobnitz(66)
+Frobnitz(49)
+Frobnitz(85)
+Frobnitz(47)
+//下面就是我们得到的第一个size小于50地Fronitz
+Frobnitz(26)
+*/
+</code></pre>
+<p>作为结果，我们得到的是流中<strong>第一个</strong><code>size</code>小于50的<code>Frobnitz</code>——一旦找到了一个这样的对象，它就会抓住不放，哪怕还会出现其他候选。尽管这个约束相当奇怪，但它确实让我们对<code>reduce()</code>有了更多的了解。</p>
+<h3 id="1455匹配">14.5.5	匹配</h3>
+<ul>
+<li><code>allMatch(Predicate)</code>：当使用所提供的<code>Predicate</code>检测流中的元素时，如果<strong>每一个</strong>元素都得到<code>true</code>，则返回<code>true</code>。在遇到第一个<code>false</code>时，会短路计算。也就是说，在找到一个<code>false</code>之后，它不会继续计算。</li>
+<li><code>anyMatch(Predicate)</code>：当使用所提供的<code>Predicate</code>检测流中的元素时，如果有<strong>任何一个</strong>元素能得到<code>true</code>，则返回<code>true</code>。在遇到第一个 <code>true</code>时，会短路计算。</li>
+<li><code>noneMatch(Predicate)</code>：当使用所提供的<code>Predicate</code>检测流中的元素时，如果<strong>没有</strong>元素得到<code>true</code>，则返回<code>true</code>。在遇到第一个<code>true</code>时，会短路计算。</li>
+</ul>
+<p>我们已经在Prime.java中看到过<code>noneMatch()</code>的一个示例，<code>allMatch()</code>和<code>anyMatch()</code>的用法几乎一样。</p>
+<p>让我们探讨一下短路计算行为。为了创建一个消除了重复代码的<code>show()</code>方法，我们必须先找到一般化地描述所有这三种匹配操作的办法，然后将其变为一个叫作<code>Matcher</code>的接口：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+//BiPredicate是一个二元谓词，这只是说，它会接受两个参数，并返回 true或false。第一个参数是我们要测试的数值的流，第二个参数是谓词Predicate本身。
+interface Matcher extends BiPredicate&lt;Stream&lt;Integer&gt;, Predicate&lt;Integer&gt;&gt; {}
+
+
+
+
+public class Maching {
+    static void show(Matcher match, int val) {
+        System.out.println(
+                match.test(
+                        IntStream.rangeClosed(1, 9)
+                                .boxed()
+                                //peek()表明在短路发生之前测试已经走了多远。从输出中可以看到短路计算行为。
+                                .peek(n -&gt; System.out.format(&quot;%d &quot;, n)),
+                        n -&gt; n &lt; val));
+    }
+    public static void main(String[] args) {
+        show(Stream::allMatch, 10);
+        show(Stream::allMatch, 4);
+        show(Stream::anyMatch, 2);
+        show(Stream::anyMatch, 0);
+        show(Stream::noneMatch, 5);
+        show(Stream::noneMatch, 0);
+    }
+}
+/*
+Output:1 2 3 4 5 6 7 8 9 true
+1 2 3 4 false
+1 true
+1 2 3 4 5 6 7 8 9 false
+1 false
+1 2 3 4 5 6 7 8 9 true
+*/
+</code></pre>
+<h3 id="1456选择一个元素">14.5.6	选择一个元素</h3>
+<ul>
+<li><code>findFirst()</code>：返回一个包含流中第一个元素的<code>Optional</code>，如果流中没有元素，则返回<code>Optional.empty</code>。</li>
+<li><code>findAny()</code>：返回一个包含流中某个元素的<code>Optional</code>，如果流中没有元素，则返回<code>Optional.empty</code>。</li>
+</ul>
+<p>之前演示过了，不谈。</p>
+<p><code>findFirst()</code>总是会选择流中的第一个元素，不管该流是否为并行的（即通过<code>parallel()</code>获得的流）。对于非并行的流，<code>findAny()</code>会选择第一个元素（尽管从定义来看，它可以选择任何一个元素）。在这个例子中，当这个流是并行流时，<code>findAny()</code>有可能选择第一个元素之外的其他元素。</p>
+<p>如果必须选择某个流的最后一个元素，请使用<code>reduce()</code>：</p>
+<pre><code class="language-java">package streams;
+
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class LastElement {
+    public static void main(String[] args) {
+        //注意使用适当的数值化Optional类型
+        OptionalInt last = IntStream.range(10, 20)
+                //传入n1，n2，返回n2
+                .reduce((n1, n2) -&gt; n2);
+        System.out.println(last.orElse(-1));
+        // 非数值对象：
+        //这里使用了一个类型化的Optional
+        Optional&lt;String&gt; lastobj =
+                Stream.of(&quot;one&quot;, &quot;two&quot;, &quot;three&quot;)
+                        .reduce((n1, n2) -&gt; n2);
+        System.out.println(
+                lastobj.orElse(&quot;Nothing there!&quot;));
+    }
+}
+/*
+Output:19
+three
+*/
+</code></pre>
+<h3 id="1457获取流相关的信息">14.5.7	获取流相关的信息</h3>
+<ul>
+<li><code>count()</code>：获得流中元素的数量。</li>
+<li><code>max(Comparator)</code>：通过<code>Comparator</code>确定这个流中的“最大”元素。</li>
+<li><code>min(Comparator)</code>：通过<code>Comparator</code>确定这个流中的“最小”元素。</li>
+</ul>
+<p><code>String</code>有一个预定义的<code>Comparator</code>，可以简化我们的示例：</p>
+<pre><code class="language-java">package streams;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class Informational {
+    public static void
+    main(String[] args) throws Exception {
+        System.out.println(
+                FileToWords.stream(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;).count());
+        System.out.println(
+                FileToWords.stream(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;)
+                        .min(String.CASE_INSENSITIVE_ORDER)
+                        .orElse(&quot;NONE&quot;));
+        System.out.println(
+                FileToWords.stream(&quot;D:\\IDEAProjectSpace\\ONJava8Study\\OnJavaExample\\src\\streams\\Cheese.dat&quot;)
+                        .max(String.CASE_INSENSITIVE_ORDER)
+                        .orElse(&quot;NONE&quot;));
+    }
+}
+/*
+Output:
+32
+a
+you
+*/
+</code></pre>
+<h4 id="获得数值化流相关的信息">获得数值化流相关的信息</h4>
+<ul>
+<li><code>average()</code>：就是通常的意义，获得平均值。</li>
+<li><code>max()</code>与<code>min()</code>：这些操作不需要一个<code>Comparator</code>，因为它们处理的是数值化流。</li>
+<li><code>sum()</code>：将流中的数值累加起来。</li>
+<li><code>summaryStatistics()</code>：返回可能有用的摘要数据。不太清楚为什么Java库的设计者觉得需要这个，因为我们自己可以用直接方法获得所有这些数据。</li>
+</ul>
+<pre><code class="language-java">package streams;
+
+import static streams.RandInts.rands;
+
+/**
+ * Created with IntelliJ IDEA.
+ *
+ * @author: Caldarius
+ * @date: 2023/1/23
+ * @description:
+ */
+public class NumericStreamInfo {
+    public static void main(String[] args) {
+        System.out.println(rands().average().getAsDouble());
+        System.out.println(rands().max().getAsInt());
+        System.out.println(rands().min().getAsInt());
+        System.out.println(rands().sum());
+        System.out.println(rands().summaryStatistics());
+    }
+}
+/*
+Output:
+527.17
+997
+1
+52717
+IntSummaryStatistics{count=100, sum=52717, min=1, average=527.170000, max=997}
+*/
+</code></pre>
+<p>感觉有点累，小麻。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#141java8%E5%AF%B9%E6%B5%81%E7%9A%84%E6%94%AF%E6%8C%81">14.1	Java8对流的支持</a></li>
+<li><a href="#142%E6%B5%81%E7%9A%84%E5%88%9B%E5%BB%BA">14.2	流的创建</a>
+<ul>
+<li><a href="#1421%E9%9A%8F%E6%9C%BA%E6%95%B0%E6%B5%81">14.2.1	随机数流</a></li>
+<li><a href="#1422int%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%8C%BA%E9%97%B4%E8%8C%83%E5%9B%B4">14.2.2	int类型的区间范围</a></li>
+<li><a href="#1423generate">14.2.3	generate()</a></li>
+<li><a href="#1424iterate">14.2.4	iterate()</a></li>
+<li><a href="#1425%E6%B5%81%E7%94%9F%E6%88%90%E5%99%A8">14.2.5	流生成器</a></li>
+<li><a href="#1426arrays">14.2.6	Arrays</a></li>
+<li><a href="#1427%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F">14.2.7	正则表达式</a></li>
+</ul>
+</li>
+<li><a href="#143%E4%B8%AD%E9%97%B4%E6%93%8D%E4%BD%9C">14.3	中间操作</a>
+<ul>
+<li><a href="#1431%E8%B7%9F%E8%B8%AA%E4%B8%8E%E6%B5%8B%E8%AF%95">14.3.1	跟踪与测试</a></li>
+<li><a href="#1432%E5%AF%B9%E6%B5%81%E5%85%83%E7%B4%A0%E8%BF%9B%E8%A1%8C%E6%8E%92%E5%BA%8F">14.3.2	对流元素进行排序</a></li>
+<li><a href="#1433%E7%A7%BB%E9%99%A4%E5%85%83%E7%B4%A0">14.3.3	移除元素</a></li>
+<li><a href="#1434%E5%B0%86%E5%87%BD%E6%95%B0%E5%BA%94%E7%94%A8%E4%BA%8E%E6%AF%8F%E4%B8%AA%E6%B5%81%E5%85%83%E7%B4%A0">14.3.4	将函数应用于每个流元素</a></li>
+<li><a href="#1435%E5%9C%A8%E5%BA%94%E7%94%A8map%E6%9C%9F%E9%97%B4%E7%BB%84%E5%90%88%E6%B5%81">14.3.5	在应用map()期间组合流</a></li>
+</ul>
+</li>
+<li><a href="#144optional%E7%B1%BB%E5%9E%8B">14.4	Optional类型</a>
+<ul>
+<li><a href="#1441%E4%BE%BF%E6%8D%B7%E5%87%BD%E6%95%B0">14.4.1	便捷函数</a></li>
+<li><a href="#1442%E5%88%9B%E5%BB%BAoptional">14.4.2	创建Optional</a></li>
+<li><a href="#1443optional%E5%AF%B9%E8%B1%A1%E4%B8%8A%E7%9A%84%E6%93%8D%E4%BD%9C">14.4.3	Optional对象上的操作</a></li>
+<li><a href="#1444%E7%94%B1optional%E7%BB%84%E6%88%90%E7%9A%84%E6%B5%81">14.4.4	由Optional组成的流</a></li>
+</ul>
+</li>
+<li><a href="#145%E7%BB%88%E7%BB%93%E6%93%8D%E4%BD%9C">14.5	终结操作</a>
+<ul>
+<li><a href="#1452%E5%9C%A8%E6%AF%8F%E4%B8%AA%E6%B5%81%E5%85%83%E7%B4%A0%E4%B8%8A%E5%BA%94%E7%94%A8%E6%9F%90%E4%B8%AA%E7%BB%88%E7%BB%93%E6%93%8D%E4%BD%9C">14.5.2	在每个流元素上应用某个终结操作</a></li>
+<li><a href="#1453%E6%94%B6%E9%9B%86%E6%93%8D%E4%BD%9C">14.5.3	收集操作</a></li>
+<li><a href="#1454%E7%BB%84%E5%90%88%E6%89%80%E6%9C%89%E7%9A%84%E6%B5%81%E5%85%83%E7%B4%A0">14.5.4	组合所有的流元素</a></li>
+<li><a href="#1455%E5%8C%B9%E9%85%8D">14.5.5	匹配</a></li>
+<li><a href="#1456%E9%80%89%E6%8B%A9%E4%B8%80%E4%B8%AA%E5%85%83%E7%B4%A0">14.5.6	选择一个元素</a></li>
+<li><a href="#1457%E8%8E%B7%E5%8F%96%E6%B5%81%E7%9B%B8%E5%85%B3%E7%9A%84%E4%BF%A1%E6%81%AF">14.5.7	获取流相关的信息</a>
+<ul>
+<li><a href="#%E8%8E%B7%E5%BE%97%E6%95%B0%E5%80%BC%E5%8C%96%E6%B5%81%E7%9B%B8%E5%85%B3%E7%9A%84%E4%BF%A1%E6%81%AF">获得数值化流相关的信息</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://caldarius.github.io/post/19-reflection/">
+              <h3 class="post-title">
+                19反射
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://caldarius.github.io//atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

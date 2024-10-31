@@ -1,0 +1,2209 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>19反射 | Caldarius</title>
+<link rel="shortcut icon" href="https://caldarius.github.io//favicon.ico?v=1730380932353">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://caldarius.github.io//styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="19反射 | Caldarius - Atom Feed" href="https://caldarius.github.io//atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="
+反射可以在程序运行时发现并使用对象的类型信息。
+
+反射使我们摆脱了只能在编译时执行面向类型操作的限制，并且让我们能够编写一些非常强大的程序。对反射的需要，揭示了面向对象设计中大量有趣（且复杂）的问题，并引发了我们对一些基本问题的思考，例如..." />
+    <meta name="keywords" content="Java,读书笔记" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://caldarius.github.io/">
+  <img class="avatar" src="https://caldarius.github.io//images/avatar.png?v=1730380932353" alt="">
+  </a>
+  <h1 class="site-title">
+    Caldarius
+  </h1>
+  <p class="site-description">
+    世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活。
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              19反射
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-10-23
+              </span>
+              <span>
+                88 min read
+              </span>
+              
+                <a href="https://caldarius.github.io/tag/java/" class="post-tag">
+                  # Java
+                </a>
+              
+                <a href="https://caldarius.github.io/tag/notes/" class="post-tag">
+                  # 读书笔记
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://caldarius.github.io//post-images/19-reflection.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <blockquote>
+<p>反射可以在程序运行时发现并使用对象的类型信息。</p>
+</blockquote>
+<p>反射使我们摆脱了只能在编译时执行面向类型操作的限制，并且让我们能够编写一些非常强大的程序。对反射的需要，揭示了面向对象设计中大量有趣（且复杂）的问题，并引发了我们对一些基本问题的思考，例如程序如何构建。</p>
+<p>本章将讨论Java是如何在运行时发现对象和类的信息的。这通常有两种形式：简单反射，它假定你在编译时就已经知道了所有可用的类型；以及更复杂的反射，它允许我们在运行时发现和使用类的信息。</p>
+<h2 id="191-为什么需要反射">19.1　为什么需要反射</h2>
+<p>这里我们使用一个已经很熟悉的示例，它使用了多态并展示了类的层次结构。它的泛化类型是基类<code>Shape</code>，具体的子类型包括<code>Circle</code>、<code>Square</code>和<code>Triangle</code>（见图19-1）。<br>
+<img src="https://caldarius.github.io//post-images/1729664938031.png" alt="" loading="lazy"><br>
+这是一个典型的类层次结构图，基类在顶部，子类向下扩展。面向对象编程的一个基本目标就是，让编写的代码只操纵基类（本例中为<code>Shape</code>）的引用，因此如果你决定添加新类（例如继承了<code>Shape</code>的<code>Rhomboid</code>），大部分的代码不会受到影响。在这个例子中，<code>Shape</code>接口中的方法<code>draw()</code>是可以动态绑定的，因此客户程序员可以通过泛化的<code>Shape</code>引用来调用具体的<code>draw()</code>方法。在所有子类中，<code>draw()</code>都被重写，并且因为它是一个动态绑定的方法，即使通过泛化的<code>Shape</code>引用来调用它，也会产生正确的行为。这就是多态。</p>
+<p>因此，通常来说你会创建一个特定的对象（<code>Circle</code>、<code>Square</code>或<code>Triangle</code>），将其向上转型为<code>Shape</code>（忽略对象的特定类型），这样就可以在后续的程序里一直使用这个<code>Shape</code>引用，而不需要知道其具体类型。</p>
+<p>你可以像下面这样，对<code>Shape</code>的层次结构进行编程：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.stream.Stream;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/10
+ * @description:
+ */
+abstract class Shape {
+    void draw() {
+        //这里看到 this + string，直接调this.toString()
+        System.out.println(this + &quot;.draw()&quot;);
+    }
+    @Override
+    public abstract String toString();
+}
+class Circle extends Shape {
+    @Override public String toString() {
+        return &quot;Circle&quot;;
+    }
+}
+class Square extends Shape {
+    @Override public String toString() {
+        return &quot;Square&quot;;
+    }
+}
+
+class Triangle extends Shape {
+    @Override public String toString() {
+        return &quot;Triangle&quot;;
+    }
+}
+
+
+
+
+
+public class Shapes {
+    public static void main(String[] args) {
+        Stream.of(
+                        new Circle(),
+                        new Square(),
+                        new Triangle())
+                .forEach(Shape::draw);
+    }
+}
+/*Output:
+Circle.draw()
+Square.draw()
+Triangle.draw()
+*/
+</code></pre>
+<p>基类里包含一个<code>draw()</code>方法，它通过将<code>this</code>传递给<code>System.out.println()</code>，间接地使用了<code>toString()</code>方法来显示类的标识符**（<code>toString()</code>方法被声明为<code>abstract</code>的，这样就可以强制子类重写该方法，并防止没什么内容的<code>Shape</code>类被实例化）。**如果一个对象出现在字符串拼接表达式中（该表达式需要包含<code>+</code>和<code>String</code>对象），这个对象的<code>toString()</code>方法就会被自动调用，来生成一个代表它自身的字符串。每个子类都重写了<code>toString()</code>方法（从<code>Object</code>继承而来），所以<code>draw()</code>最终（多态地）在不同的情况下打印出了不同的内容。</p>
+<p>在此示例中，将一个<code>Shape</code>的子类对象放入<code>Stream&lt;Shape&gt;</code>时，会发生隐式的向上转型。在向上转型为<code>Shape</code>时，这个对象的<strong>确切类型信息</strong>就丢失了。对于流来说，它们只是<code>Shape</code>类的对象。</p>
+<p>从技术上讲，<code>Stream&lt;Shape&gt;</code>实际上将所有内容都当作<code>Object</code>保存。<strong>当一个元素被取出时，它会自动转回<code>Shape</code>。这是反射最基本的形式，在运行时检查了所有的类型转换是否正确。这就是反射的意思：在运行时，确定对象的类型。</strong></p>
+<p>在这里，反射类型转换并不彻底：<code>Object</code>只是被转换成了<code>Shape</code>，而没有转换为最终的<code>Circle</code>、<code>Square</code>或<code>Triangle</code>。这是因为我们所能得到的信息就是，<code>Stream&lt;Shape&gt;</code>里保存的都是<code>Shape</code>。在编译时，这是由<code>Stream</code>和Java泛型系统强制保证的，而在运行时，类型转换操作会确保这一点。</p>
+<p>接下来就该多态上场了，<code>Shape</code>对象实际上执行的代码，取决于引用是属于<code>Circle</code>、<code>Square</code>还是<code>Triangle</code>。一般来说，这是合理的：**你希望自己的代码尽可能少地知道对象的确切类型信息，而只和这类对象的通用表示（在本例中为<code>Shape</code>）打交道。**这样的话，我们的代码就更易于编写、阅读和维护，并且设计也更易于实现、理解和更改。所以多态是面向对象编程的一个基本目标。</p>
+<p>但是，假设你遇到了一个特殊的编程问题，只要知道这个泛化引用的确切类型，就可以很容易地解决，这样的话你又该怎么办呢？例如，假设我们允许用户可以将某种特定类型的所有形状都标记为一种特殊的颜色，以突出显示它们。这样，用户就可以找到屏幕上所有突出显示的三角形。或者，你的方法需要“旋转”一系列的形状，但旋转圆形是没有意义的，因此你想跳过圆形。<strong>通过反射，你可以查询到某个<code>Shape</code>引用所指的确切类型，从而选择并隔离特殊情况。</strong></p>
+<h2 id="192-class对象">19.2　<code>Class</code>对象</h2>
+<p>要想了解Java中的反射是如何工作的，就必须先了解类型信息在运行时是如何表示的。这项工作是通过叫作**<code>Class</code>对象**的特殊对象来完成的，它包含了与类相关的信息。事实上，<code>Class</code>对象被用来创建类的所有“常规”对象。Java使用<code>Class</code>对象执行反射，即使是类型转换这样的操作也一样。<code>Class</code>类还有许多其他使用反射的方式。</p>
+<p>程序中的每个类都有一个<code>Class</code>对象。也就是说，每次编写并编译一个新类时，都会生成一个<code>Class</code>对象（并被相应地存储在同名的.class文件中）。为了生成这个对象，Java虚拟机（JVM）使用被称为<strong>类加载器</strong>（class loader）的子系统。</p>
+<p>类加载器子系统实际上可以包含一条类加载器链，但里面只会有一个原始类加载器(即启动类加载器)，它是JVM实现的一部分。原始类加载器通常从本地磁盘加载所谓的<strong>可信类</strong>，包括Java API类。通常来说我们不需要加载器链中的额外加载器，但对于特殊需要（例如以某种方式加载类以支持Web服务器应用程序，或通过网络来下载类），你可以引入额外的类加载器来实现。</p>
+<p>类在首次使用时才会被动态加载到JVM中。当程序第一次引用该类的静态成员时，就会触发这个类的加载。构造器是类的一个静态方法，尽管没有明确使用<code>static</code>关键字。因此，使用<code>new</code>操作符创建类的新对象也算作对该类静态成员的引用，构造器的初次使用会导致该类的加载。</p>
+<p>所以，Java程序在运行前并不会被完全加载，而是在必要时加载对应的部分。这与许多传统语言不同。这种动态加载能力使得Java可以支持很多行为，而它们在静态加载语言（如 C++）中很难复制，或根本不可能复制。</p>
+<p>类加载器首先检查是否加载了该类型的<code>Class</code>对象。如果没有，默认的类加载器会定位到具有该名称的.class文件（例如，某个附加类加载器可能会在数据库中查找对应的字节码）。当该类的字节数据被加载时，它们会被<strong>验证</strong>，以确保没有被损坏，并且不包含恶意的Java代码（这是Java的众多安全防线里的一条）。</p>
+<p>一旦该类型的<code>Class</code>对象加载到内存中，它就会用于创建该类型的所有对象。下面这个程序可以证明这一点：</p>
+<pre><code class="language-java">package reflection;
+
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/10
+ * @description:
+ */
+class Cookie {
+    static { System.out.println(&quot;Loading Cookie&quot;); }
+}
+
+class Gum {
+    static { System.out.println(&quot;Loading Gum&quot;); }
+}
+
+class Candy {
+    static { System.out.println(&quot;Loading Candy&quot;); }
+}
+
+public class SweetShop {
+    public static void main(String[] args) {
+        System.out.println(&quot;inside main&quot;);
+        new Candy();
+        System.out.println(&quot;After creating Candy&quot;);
+        try {
+            Class.forName(&quot;Gum&quot;);
+        } catch(ClassNotFoundException e) {
+            System.out.println(&quot;Couldn't find Gum&quot;);
+        }
+        System.out.println(&quot;After Class.forName(\&quot;Gum\&quot;)&quot;);
+        new Cookie();
+        System.out.println(&quot;After creating Cookie&quot;);
+    }
+}
+/*
+Output:
+inside main
+Loading Candy
+After creating Candy
+Couldn't find Gum
+After Class.forName(&quot;Gum&quot;)
+Loading Cookie
+After creating Cookie
+*/
+</code></pre>
+<p><code>Candy</code>、<code>Gum</code>和<code>Cookie</code>这三个类都有一个静态代码块，该静态代码块在类第一次加载时执行。输出的信息会告诉我们这个类是什么时候加载的。在<code>main()</code>方法中，对象的创建被置于打印语句之间，以方便我们判断类加载的时间。</p>
+<p>输出结果显示了<code>Class</code>对象仅在需要时才加载，并且静态代码块的初始化是在类加载时执行的。</p>
+<p>下面这一行代码特别有趣：</p>
+<pre><code class="language-java">Class.forName(&quot;Gum&quot;);
+</code></pre>
+<p>所有的<code>Class</code>对象都属于<code>Class</code>类。<code>Class</code>对象和其他对象一样，因此你可以获取并操作它的引用（这也是加载器所做的）。静态的<code>forName()</code>方法可以获得<code>Class</code>对象的引用，该方法接收了一个包含所需类的文本名称（注意拼写和大小写！）的字符串，并返回了一个<code>Class</code>引用，上面示例中的返回值被忽略；**我们对<code>forName()</code>的调用只是为了它的副作用：如果类<code>Gum</code>尚未加载，则加载它。**在加载过程中，会执行<code>Gum</code>的静态代码块。</p>
+<p>在前面的例子中，如果<code>Class.forName()</code>因为找不到试图加载的类而失败，它会抛出一个<code>ClassNotFoundException</code>。在这里，我们只是简单地报告了问题并继续执行，但在更复杂的程序中，你可能会尝试在异常处理流程中修复这个问题（在进阶卷第8章中有个示例）。</p>
+<p><strong>注意，传递给forName()的字符串参数必须是类的完全限定名称（包括包名称）。</strong></p>
+<p>**不管什么时候，只要在运行时用到类型信息，就必须首先获得相应的<code>Class</code>对象的引用。**这时<code>Class.forName()</code>方法用起来就很方便了，因为不需要对应类型的对象就能获取<code>Class</code>引用。但是，如果已经有了一个你想要的类型的对象，就可以通过<code>getClass()</code>方法来获取<code>Class</code>引用，这个方法属于<code>Object</code>根类。它返回的<code>Class</code>引用表示了这个对象的实际类型。<code>Class</code>类有很多方法，下面是其中的一部分：</p>
+<pre><code class="language-java">package reflection.toys;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/10
+ * @description:
+ */
+interface HasBatteries {}
+interface Waterproof {}
+interface Shoots {}
+
+class Toy {
+    // 可以将下面这个无参构造器注释掉来看一下NoSuchMethodError
+    public Toy() {}
+    public Toy(int i) {}
+}
+//FancyToy继承了类Toy并实现了接口HasBatteries、Waterproof和Shoots。
+class FancyToy extends Toy
+        implements HasBatteries, Waterproof, Shoots {
+    public FancyToy() { super(1); }
+}
+
+public class ToyTest {
+    //printInfo()方法使用getName()来生成完全限定的类名
+    static void printInfo(Class cc) {
+        //isInterface()可以告诉你这个Class对象是否表示一个接口
+        System.out.println(&quot;Class name: &quot; + cc.getName() +
+                &quot; is interface? [&quot; + cc.isInterface() + &quot;]&quot;);
+        //使用getSimpleName()和getCanonicalName()分别生成不带包的名称和完全限定的名称。
+        System.out.println(
+                &quot;Simple name: &quot; + cc.getSimpleName());
+        System.out.println(
+                &quot;Canonical name : &quot; + cc.getCanonicalName());
+    }
+    @SuppressWarnings(&quot;deprecation&quot;)
+    public static void main(String[] args) {
+        Class c = null;
+        try {
+            //注意，传递给forName()的字符串参数必须是类的完全限定名称（包括包名称）。
+            c = Class.forName(&quot;reflection.toys.FancyToy&quot;);
+        } catch(ClassNotFoundException e) {
+            System.out.println(&quot;Can't find FancyToy&quot;);
+            System.exit(1);
+        }
+        printInfo(c);
+        //在main()中调用的Class.getInterfaces()方法返回了一个Class对象数组，它们表示你感兴趣的这个Class对象的所有接口。
+        for(Class face : c.getInterfaces())
+            printInfo(face);
+        //还可以使用getSuperclass()来查询Class对象的直接基类。它将返回一个Class引用，而你可以对它做进一步查询。这样你就可以在运行时获取一个对象的完整类层次结构。
+        Class up = c.getSuperclass();
+        Object obj = null;
+        try {
+            //Class的newInstance()方法是实现“虚拟构造器”的一种途径，这相当于声明“我不知道你的确切类型，但无论如何你都要正确地创建自己”。在前面的例子中，up只是一个Class引用，它在编译时没有更多的类型信息。当创建一个新实例时，你会得到一个Object引用。但该引用指向了一个Toy对象。你可以给它发送Object能接收的消息，但如果想要发送除此之外的其他消息，就必须进一步了解它，并进行某种类型转换。此外，使用Class.newInstance()创建的类必须有一个public的无参构造器。在本章后面，你将看到如何通过Java反射API，使用任意构造器来动态创建类的对象。
+            //注意，此示例中的newInstance()在Java 8中还是正常的，但在更高版本中已被弃用，Java推荐使用Constructor.newInstance()来代替。示例中我们使用了@SuppressWarnings(&quot;deprecation&quot;)来抑制那些更高版本的弃用警告。
+            obj = up.newInstance();
+        } catch(Exception e) {
+            throw new
+                    RuntimeException(&quot;Cannot instantiate&quot;);
+        }
+        printInfo(obj.getClass());
+    }
+}
+/*
+Output:
+Class name: reflection.toys.FancyToy is interface? [false]
+Simple name: FancyToy
+Canonical name : reflection.toys.FancyToy
+Class name: reflection.toys.HasBatteries is interface? [true]
+Simple name: HasBatteries
+Canonical name : reflection.toys.HasBatteries
+Class name: reflection.toys.Waterproof is interface? [true]
+Simple name: Waterproof
+Canonical name : reflection.toys.Waterproof
+Class name: reflection.toys.Shoots is interface? [true]
+Simple name: Shoots
+Canonical name : reflection.toys.Shoots
+Class name: reflection.toys.Toy is interface? [false]
+Simple name: Toy
+Canonical name : reflection.toys.Toy
+*/
+</code></pre>
+<h3 id="1921-类字面量">19.2.1　类字面量</h3>
+<p>Java还提供了另一种方式来生成<code>Class</code>对象的引用：<strong>类字面量</strong>（class literal）。对前面的程序而言，它看起来像这样：</p>
+<pre><code class="language-java">FancyToy.class;
+</code></pre>
+<p>这更简单也更安全，因为它会进行编译时检查（因此不必放在<code>try</code>块中）。另外它还消除了对<code>forName()</code>方法的调用，所以效率也更高。</p>
+<blockquote>
+<p>类字面量适用于常规类以及接口、数组和基本类型。</p>
+<p>此外，每个基本包装类都有一个名为<code>TYPE</code>的标准字段。<code>TYPE</code>字段表示一个指向和基本类型对应的<code>Class</code>对象的引用。</p>
+</blockquote>
+<p>上面的意思并不是说包装类不能用 <code>.class</code>，而是说包装类<code>.TYPE</code>会获取到一个指向基本类型的<code>Class</code>对象的引用。简单的例子：</p>
+<pre><code class="language-java">package reflection;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class BasicPackingClass {
+    public static void main(String[] args) {
+        System.out.println(Integer.class.getSimpleName());
+        System.out.println(Integer.TYPE);
+    }
+}
+/*
+Output:
+Integer
+int
+*/
+</code></pre>
+<p>如表19-1所示。</p>
+<p><strong>表19-1</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类字面量</th>
+<th style="text-align:left">等价于</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>boolean.class</code></td>
+<td style="text-align:left"><code>Boolean.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>char.class</code></td>
+<td style="text-align:left"><code>Character.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>byte.class</code></td>
+<td style="text-align:left"><code>Byte.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>short.class</code></td>
+<td style="text-align:left"><code>Short.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>int.class</code></td>
+<td style="text-align:left"><code>Integer.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>long.class</code></td>
+<td style="text-align:left"><code>Long.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>float.class</code></td>
+<td style="text-align:left"><code>Float.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>double.class</code></td>
+<td style="text-align:left"><code>Double.TYPE</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>void.class</code></td>
+<td style="text-align:left"><code>Void.TYPE</code></td>
+</tr>
+</tbody>
+</table>
+<p>我建议尽可能用“<code>.class</code>”的形式，因为它与常规类更一致。</p>
+<p>请注意，使用“<code>.class</code>”的形式创建<code>Class</code>对象的引用时，该<code>Class</code>对象不会自动初始化。实际上，在使用一个类之前，需要先执行以下3个步骤。</p>
+<ol>
+<li><strong>加载</strong>。这是由类加载器执行的。该步骤会先找到字节码（通常在类路径中的磁盘上，但也不一定），然后从这些字节码中创建一个<code>Class</code>对象。</li>
+<li><strong>链接</strong>。链接阶段会验证类中的字节码，为静态字段分配存储空间，并在必要时解析该类对其他类的所有引用。</li>
+<li><strong>初始化</strong>。如果有基类的话，会先初始化基类，执行静态初始化器和静态初始化块。</li>
+</ol>
+<p>初始化被延迟到首次引用静态方法（构造器是隐式静态的）或非常量静态字段时：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.Random;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/10
+ * @description:
+ */
+class Initable {
+    static final int STATIC_FINAL = 47;
+    static final int STATIC_FINAL2 =
+            ClassInitialization.rand.nextInt(1000);
+    static {
+        System.out.println(&quot;Initializing Initable&quot;);
+    }
+}
+
+class Initable2 {
+    static int staticNonFinal = 147;
+    static {
+        System.out.println(&quot;Initializing Initable2&quot;);
+    }
+}
+
+class Initable3 {
+    static int staticNonFinal = 74;
+    static {
+        System.out.println(&quot;Initializing Initable3&quot;);
+    }
+}
+public class ClassInitialization {
+
+    public static Random rand = new Random(47);
+    public static void
+    main(String[] args) throws Exception {
+        // 不会触发初始化
+        Class initable = Initable.class;
+        System.out.println(&quot;After creating Initable ref&quot;);
+        // 不会触发初始化。如果一个static final字段的值是“编译时常量”，比如Initable.staticFinal，那么这个值不需要初始化Initable类就能读取。
+        System.out.println(Initable.STATIC_FINAL);
+        // 触发初始化。但是把一个字段设置为static和final并不能保证这种行为：对Initable.staticFinal2的访问会强制执行类的初始化，因为它不是编译时常量。
+        System.out.println(Initable.STATIC_FINAL2);
+        // 触发初始化
+        System.out.println(Initable2.staticNonFinal);
+        Class initable3 = Class.forName(&quot;reflection.Initable3&quot;);
+        System.out.println(&quot;After creating Initable3 ref&quot;);
+        System.out.println(Initable3.staticNonFinal);
+    }
+}
+/*
+Output:
+After creating Initable ref
+47
+Initializing Initable
+258
+Initializing Initable2
+147
+Initializing Initable3
+After creating Initable3 ref
+74
+*/
+</code></pre>
+<p>实际上，初始化会“尽可能懒惰”。从<code>initable</code>引用的创建过程中可以看出，仅使用<code>.class</code>语法来获取对类的引用不会导致初始化。而<code>Class.forName()</code>会立即初始化类以产生<code>Class</code>引用，如<code>initable3</code>的创建所示。</p>
+<p>如果一个<code>static final</code>字段的值是“编译时常量”，比如<code>Initable.staticFinal</code>，那么这个值不需要初始化<code>Initable</code>类就能读取。但是把一个字段设置为<code>static</code>和<code>final</code>并不能保证这种行为：对<code>Initable.staticFinal2</code>的访问会强制执行类的初始化，因为它不是编译时常量。</p>
+<p>如果<code>static</code>字段不是<code>final</code>的，那么访问它时，如果想要正常读取，总是需要先进行链接（为字段分配存储）和初始化（初始化该存储），正如在对<code>Initable2.staticNonFinal</code>的访问中看到的那样。</p>
+<h3 id="1922-泛型类的引用">19.2.2　泛型类的引用</h3>
+<p><code>Class</code>引用指向的是一个<code>Class</code>对象，该对象可以生成类的实例，并包含了这些实例所有方法的代码。它还包含该类的静态字段和静态方法。所以一个<code>Class</code>引用表示的就是它所指向的确切类型：<code>Class</code>类的一个对象。</p>
+<p>你可以使用泛型语法来限制<code>Class</code>引用的类型。在下面的示例中，这两种语法都是正确的：</p>
+<pre><code class="language-java">Class intClass = int.class;
+intClass = double.class;
+
+Class&lt;Integer&gt; genericIntClass = int.class;
+genericIntClass = Integer.class; // 一样
+// genericIntClass = double.class; // 不合法
+</code></pre>
+<p><code>intClass</code>可以重新赋值为任何其他的<code>Class</code>对象，例如<code>double.class</code>，而不会产生警告。泛化的类引用<code>genericIntClass</code>只能分配给其声明的类型。通过使用泛型语法，可以让编译器强制执行额外的类型检查。</p>
+<p>如果你想稍微放松一下这种限制，那该怎么办？乍一看，好像可以执行下面这样的操作：</p>
+<pre><code class="language-java">Class&lt;Number&gt; genericNumberClass = int.class;
+</code></pre>
+<p>这似乎是有道理的，因为<code>Integer</code>继承了<code>Number</code>。但实际上这段代码无法运行，因为<code>Integer</code>的<code>Class</code>对象不是<code>Number</code>的<code>Class</code>对象的子类（这里的区别看起来好像很微妙，我们将在第20章对此进行深入讨论）。</p>
+<p>要想放松使用泛化的<code>Class</code>引用时的限制，请使用通配符<code>?</code>，它是Java泛型的一部分，表示“任何事物”。所以我们可以在上面的例子中为普通的<code>Class</code>引用加上通配符，这样就可以产生相同的结果：</p>
+<pre><code class="language-java">Class&lt;?&gt; intClass = int.class;
+    intClass = double.class;
+</code></pre>
+<p>尽管如我们看到的那样，普通的<code>Class</code>并不会产生编译器警告，但是和普通的<code>Class</code>相比，我们还是倾向于<code>Class&lt;?&gt;</code>，即使它们是等价的。<code>Class&lt;?&gt;</code>的好处在于，它表明了你不是偶然或无意识地使用了非具体的类引用。你就是选择了这个非具体的版本。</p>
+<p>如果想创建一个<code>Class</code>引用，并将其限制为某个类型或<strong>任意子类型</strong>，可以将通配符与<code>extends</code>关键字组合来创建一个<strong>界限</strong>（bound）。因此，与其使用<code>Class&lt;Number&gt;</code>，不如像下面这样做：</p>
+<pre><code class="language-java">Class&lt;? extends Number&gt; bounded = int.class;
+    bounded = double.class;
+    bounded = Number.class;
+    // 或者任何继承了Number的类
+</code></pre>
+<p>将泛型语法添加到<code>Class</code>引用的一个原因是提供编译时的类型检查。这样的话，如果你做错了什么，那么很快就能发现。使用普通的<code>Class</code>引用时，你可能确实不会误入歧途，但是如果你犯了一个错误，直到运行时才发现，那就可能会给你带来不便，甚至导致问题。</p>
+<p>下面是一个使用了泛型类语法的示例。它存储了一个类引用，然后使用<code>newInstance()</code>来生成对象：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/10
+ * @description:
+ */
+class ID {
+    //这个字段用于计数；
+    private static long counter;
+    //用于标记this是第几个id；
+    private final long id = counter++;
+    @Override public String toString() {
+        return &quot;ID&quot; + Long.toString(id);
+    }
+    // 如果想要调用getConstructor().newInstance()，就需要提供一个public的无参构造器：ID自动生成的无参构造器不是public的，因为ID类不是public的，所以我们必须显式定义它。
+    public ID() {}
+}
+public class DynamicSupplier&lt;T&gt; implements Supplier&lt;T&gt; {
+    //标记这个DynamicSupplier对象实际上会生成什么类型的对象组，实际上是final，因为没有提供set方法；
+    private Class&lt;T&gt; type;
+    public DynamicSupplier(Class&lt;T&gt; type) {
+        this.type = type;
+    }
+    @Override
+    public T get() {
+        try {
+            //调用newInstance()方法创建对应类型的对象；
+            return type.getConstructor().newInstance();
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public static void main(String[] args) {
+        Stream.generate(
+                //传入需要生成的对象的类型
+                        new DynamicSupplier&lt;&gt;(ID.class))
+                .skip(10)
+                .limit(5)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+10
+11
+12
+13
+14
+*/
+</code></pre>
+<p>对<code>Class</code>对象使用泛型语法时，<code>newInstance()</code>会返回对象的确切类型，而不仅仅是简单的<code>Object</code>，就像在ToyTest.java示例中看到的那样。但它也会受到一些限制：</p>
+<pre><code class="language-java">//class FancyToy extends Toy
+Class&lt;FancyToy&gt; ftc = FancyToy.class;
+// 生成确切的类型：
+FancyToy fancyToy =
+  ftc.getConstructor().newInstance();
+//up可以是FancyToy及其任意父类型
+Class&lt;? super FancyToy&gt; up = ftc.getSuperclass();
+// 下面的代码无法通过编译：
+// Class&lt;Toy&gt; up2 = ftc.getSuperclass();
+// 只能生成Object
+Object obj = up.getConstructor().newInstance();
+</code></pre>
+<blockquote>
+<p>如果你得到了基类，那么编译器只允许你声明这个基类引用是“<code>FancyToy</code>的某个基类”，就像表达式<code>Class&lt;? super FancyToy&gt;</code>所声明的那样。它不能被声明为<code>Class&lt;Toy&gt;</code>。这看起来有点儿奇怪，因为<code>getSuperclass()</code>返回了<strong>基类</strong>（不是接口），而编译器在编译时就知道这个基类是什么——在这里就是<code>Toy.class</code>，而不仅仅是“<code>FancyToy</code>的某个基类”。不管怎么样，因为存在这种模糊性，所以<code>up.getConstructor().newInstance()</code>的返回值不是一个确切的类型，而只是一个<code>Object</code>。</p>
+</blockquote>
+<p>也就是说，虽然我知道这个基类是Toy，但是返回的类型只能是“某个基类”，而不能是确定的某个类。所以<code>getConstructor().newInstance()</code>的返回值不是一个确切的类型，而只是一个<code>Object</code>。</p>
+<h3 id="1923-cast方法">19.2.3　<code>cast()</code>方法</h3>
+<p>还有一个用于<code>Class</code>引用的类型转换语法，即<code>cast()</code>方法：</p>
+<pre><code class="language-java">class Building {}
+class House extends Building {}
+
+public class ClassCasts {
+  public static void main(String[] args) {
+    Building b = new House();
+    Class&lt;House&gt; houseType = House.class;
+    //在这里将Building转换为了House
+    House h = houseType.cast(b);
+    // 或者直接这样进行转型
+    h = (House)b; 
+  }
+}
+</code></pre>
+<p><code>cast()</code>方法接收参数对象并将其转换为<code>Class</code>引用的类型。但是，如果观察上面的代码，你会发现，与完成了相同工作的<code>main()</code>的最后一行相比，这种方式似乎做了很多额外的工作。</p>
+<p><code>cast()</code>在你不能使用普通类型转换的情况下很有用。如果你正在编写泛型代码（你将在第20章中学习），并且存储了一个用于转型的<code>Class</code>引用，就可能会遇到这种情况。不过这很罕见——我发现在整个Java库中只有一个地方使用了<code>cast()</code>（也就是在<code>com.sun.mirror.util.DeclarationFilter</code>中）。</p>
+<p>另一个在Java库中没有使用到的特性是<code>Class.asSubclass()</code>。它会将类对象转换为更具体的类型。</p>
+<h2 id="193-转型前检查">19.3　转型前检查</h2>
+<p>到目前为止，你已经学习了以下内容。</p>
+<ol>
+<li>传统的类型转换。比如“<code>(Shape)</code>”，它使用反射来确保转型是正确的。如果你执行了错误的转型，它会抛出一个<code>ClassCastException</code>。</li>
+<li>代表对象类型的<code>Class</code>对象。你可以查询<code>Class</code>对象来获取有用的运行时信息。</li>
+</ol>
+<p>在C++中，传统的类型转换“<code>(Shape)</code>”并<strong>不</strong>执行反射[在C++中，这称为<strong>运行时类型识别</strong>（RTTI）]。它只是告诉编译器将对象视为新类型。在Java中，它的确会执行类型检查，这种转型通常称为“类型安全向下转型”（type-safe downcast）。之所以会有术语“向下转型”，是因为类层次结构图从来就是这么排列的。如果将<code>Circle</code>转型为<code>Shape</code>是向上转型，那么将<code>Shape</code>转型为<code>Circle</code>就是向下转型。不过，编译器知道一个<code>Circle</code>也是一个<code>Shape</code>，所以它允许自由地做向上转型的赋值操作，而不需要任何额外的语法。但编译器<strong>无法知道</strong>一个给定的<code>Shape</code>实际上是什么——它可能就是一个<code>Shape</code>，也可能是<code>Shape</code>的子类型，例如<code>Circle</code>、<code>Square</code>、<code>Triangle</code>或其他类型。在编译时，编译器只知道这是一个<code>Shape</code>。<strong>因此，如果不使用显式的类型转换来告诉编译器这是一个特定的类型，编译器就不会允许执行向下转型赋值操作（编译器会检查该向下转型操作是否合理，因此它不会让你向下转型为实际上不是其子类的类型）。</strong></p>
+<p>Java中还有第三种形式的反射。这就是关键字<code>instanceof</code>，它返回一个<code>boolean</code>值，表明一个对象是否是特定类型的实例。因此你可以像下面这样，以问题的形式来使用它：</p>
+<pre><code class="language-java">if(x instanceof Dog)
+  ((Dog)x).bark();
+</code></pre>
+<p>在将<code>x</code>转换为<code>Dog</code><strong>之前</strong>，你可以用<code>if</code>语句检查一下对象<code>x</code>是否属于类<code>Dog</code>。当没有其他信息可以告诉你对象类型的时候，在向下转型之前使用<code>instanceof</code>很重要。否则，你会得到一个<code>ClassCastException</code>。</p>
+<p>通常，即使只想寻找确切的类型（例如可以变成紫色的三角形），你也可以使用<code>instanceof</code>来轻松识别<strong>所有</strong>的对象。例如，假设有一系列描述<code>Pet</code>的类（以及它们的主人，这个特性在后面的例子中会派上用场）。层次结构中的每个<code>Individual</code>都有一个<code>id</code>和一个可选的名称。虽然以下类都继承自<code>Individual</code>，但<code>Individual</code>类比较复杂，因此在进阶卷附录C中进行了说明和解释。</p>
+<p>这里其实没必要看<code>Individual</code>的代码——只需要知道你可以创建它的具名或不具名的对象就可以了，而且每个<code>Individual</code>都有一个<code>id()</code>方法来返回其唯一标识符（通过计算生成对象的个数获得）。还有一个<code>toString()</code>方法——如果你没有为<code>Individual</code>提供一个名字，<code>toString()</code>就会生成简单的类型名称。</p>
+<p>下面是继承自<code>Individual</code>的类层次结构：</p>
+<p>接下来，我们需要一种方法来随机地创建<code>Pet</code>对象。为了使这个工具有不同的实现，我们将它定义为一个抽象类：</p>
+<pre><code class="language-java">package reflection.pets;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public abstract class Creator implements Supplier&lt;Pet&gt; {
+    private Random rand = new Random(34);
+    //创建不同类型的Pet；
+    //抽象的types()方法需要在Creator的子类里实现，以生成一个包含了Class对象的List。这是模板方法（Template Method）设计模式的一个例子。注意，List的泛型参数被指定为“继承了Pet的任意子类”，因此newInstance()无须类型转换即可生成一个Pet。
+    public abstract List&lt;Class&lt;? extends Pet&gt;&gt; types();
+
+    //get()会查找List的索引来生成一个Class对象。getConstructor()会生成一个Constructor对象，而newInstance()使用该Constructor来创建一个对象。
+    @Override
+    public Pet get() {
+        int n = rand.nextInt(types().size());
+        try {
+            return types().get(n)
+                    .getConstructor().newInstance();
+        //调用newInstance()时可能会得到四种异常。你可以在try块后面的catch子句里看到对它们的处理。这些异常的名称本身很好地解释了它们所代表的错误内容（IllegalAccessException表示违反了Java的安全机制，在本例中，如果无参构造器是private的，就会抛出这种异常）。
+        } catch(InstantiationException |
+                NoSuchMethodException |
+                InvocationTargetException |
+                IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public Stream&lt;Pet&gt; stream() {
+        return Stream.generate(this);
+    }
+    public Pet[] array(int size) {
+        return stream().limit(size).toArray(Pet[]::new);
+    }
+    public List&lt;Pet&gt; list(int size) {
+        return stream().limit(size)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+}
+</code></pre>
+<p>在实现<code>Creator</code>的子类时，必须提供一个<code>Pet</code>类型的<code>List</code>，这样才可以调用<code>get()</code>方法来获取<code>Pet</code>对象。<code>types()</code>方法一般来说只需要返回一个静态<code>List</code>的引用就可以了。下面是一个使用<code>forName()</code>实现的示例：</p>
+<pre><code class="language-java">package reflection.pets;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class ForNamePetCreator extends Creator{
+    private static List&lt;Class&lt;? extends Pet&gt;&gt; types =
+            new ArrayList&lt;&gt;();
+    // 你想随机生成的类型：
+    private static String[] typeNames = {
+            &quot;reflection.pets.Mutt&quot;,
+            &quot;reflection.pets.Pug&quot;,
+            &quot;reflection.pets.EgyptianMau&quot;,
+            &quot;reflection.pets.Manx&quot;,
+            &quot;reflection.pets.Cymric&quot;,
+            &quot;reflection.pets.Rat&quot;,
+            &quot;reflection.pets.Mouse&quot;,
+            &quot;reflection.pets.Hamster&quot;
+    };
+    //loader()方法使用Class.forName()来创建一个Class对象的列表，可能会抛出ClassNotFoundException。这是合理的，因为你传递给它的是一个在编译时无法验证的字符串。Pet对象在reflection包中，所以必须使用包名来引用这些类。
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static void loader() {
+        try {
+            for(String name : typeNames)
+                types.add(
+                        //这里经行了强制类型转换，会产生编译时警告
+                        (Class&lt;? extends Pet&gt;)Class.forName(name));
+        } catch(ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //要生成具有实际类型的Class对象的列表，就需要进行强制类型转换，这会产生编译时警告。我们单独定义了loader()方法，然后在静态初始化块中调用了它，这是因为@SuppressWarnings(&quot;unchecked&quot;)注解不能直接用于静态初始化块。
+    static { loader(); }
+    @Override public List&lt;Class&lt;? extends Pet&gt;&gt; types() {
+        return types;
+    }
+}
+</code></pre>
+<p>如果想要知道<code>Pet</code>有多少，我们需要一个工具来跟踪各种不同类型的<code>Pet</code>的数量。此时采用<code>Map</code>就非常适合：键可以是<code>Pet</code>类型的名称，而值则是保存了<code>Pet</code>数量的<code>Integer</code>。这样，你可以查询“有多少个<code>Hamster</code>对象”，使用<code>instanceof</code>来获得对应<code>Pet</code>的数量：</p>
+<pre><code class="language-java">package reflection.pets;
+
+import java.util.HashMap;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class PetCounter {
+    //这个计数器通过继承完成了对HashMap的功能拓展。
+    static class Counter extends HashMap&lt;String,Integer&gt; {
+        public void count(String type) {
+            Integer quantity = get(type);
+            if(quantity == null)
+                put(type, 1);
+            else
+                put(type, quantity + 1);
+        }
+    }
+    private Counter counter = new Counter();
+    private void countPet(Pet pet) {
+        System.out.print(
+                pet.getClass().getSimpleName() + &quot; &quot;);
+        if(pet instanceof Pet)
+            counter.count(&quot;Pet&quot;);
+        if(pet instanceof Dog)
+            counter.count(&quot;Dog&quot;);
+        if(pet instanceof Mutt)
+            counter.count(&quot;Mutt&quot;);
+        if(pet instanceof Pug)
+            counter.count(&quot;Pug&quot;);
+        if(pet instanceof Cat)
+            counter.count(&quot;Cat&quot;);
+        if(pet instanceof EgyptianMau)
+            counter.count(&quot;EgyptianMau&quot;);
+        if(pet instanceof Manx)
+            counter.count(&quot;Manx&quot;);
+        if(pet instanceof Cymric)
+            counter.count(&quot;Cymric&quot;);
+        if(pet instanceof Rodent)
+            counter.count(&quot;Rodent&quot;);
+        if(pet instanceof Rat)
+            counter.count(&quot;Rat&quot;);
+        if(pet instanceof Mouse)
+            counter.count(&quot;Mouse&quot;);
+        if(pet instanceof Hamster)
+            counter.count(&quot;Hamster&quot;);
+    }
+    public void count(Creator creator) {
+        creator.stream().limit(20)
+                .forEach(pet -&gt; countPet(pet));
+        System.out.println();
+        System.out.println(counter);
+    }
+    public static void main(String[] args) {
+        new PetCounter().count(new ForNamePetCreator());
+    }
+}
+/*
+Output:
+Rat Hamster EgyptianMau Rat Rat Mutt Mutt EgyptianMau Rat Rat Cymric EgyptianMau Rat Mutt Rat Mutt Hamster Rat Mouse Cymric
+{EgyptianMau=3, Rat=8, Cymric=2, Mouse=1, Cat=5, Manx=2, Rodent=11, Mutt=4, Dog=4, Pet=20, Hamster=2}
+*/
+</code></pre>
+<p>在<code>countPet()</code>中，我们使用<code>instanceof</code>来对数组里的每个<code>Pet</code>进行测试和计数。</p>
+<p><code>instanceof</code>有一个相当严格的限制：只能将其与命名类型进行比较，而不能与一个<code>Class</code>对象进行比较。在前面的例子中，你可能认为像这样写一大堆的<code>instanceof</code>表达式很乏味，的确是这样的。但是如果你想创建一个<code>Class</code>对象数组，并将其与那些对象进行比较，从而将<code>instanceof</code>巧妙地自动化，这是不可能的（不过稍后你会看到另一个替代方案）。这个限制其实并不像你想象的那么严重，因为最终你会明白，如果代码里有许多的<code>instanceof</code>表达式，那么这个设计可能是存在缺陷的。</p>
+<h3 id="1931-使用类字面量">19.3.1　使用类字面量</h3>
+<p>如果我们使用类字面量重新实现<code>Creator</code>，那么最终结果在许多方面都会显得更清晰：</p>
+<pre><code class="language-java">package reflection.pets;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class PetCreator extends Creator{
+    //这一次，types的创建代码并不需要放在try块里，因为它在编译时被检查，所以不会抛出任何异常，这和Class.forName()不一样。
+    public static final List&lt;Class&lt;? extends Pet&gt;&gt; ALL_TYPES =
+        Collections.unmodifiableList(Arrays.asList(
+                Pet.class, Dog.class, Cat.class, Rodent.class,
+                Mutt.class, Pug.class, EgyptianMau.class,
+                Manx.class, Cymric.class, Rat.class,
+                Mouse.class, Hamster.class));
+    // 这里的types列表是ALL_TYPES（使用List.subList()创建）的一部分，它包含了确切的宠物类型，因此可以用来生成随机的Pet。
+    //在即将出现的PetCounter3.java示例中，我们会预先加载一个包含所有Pet类型（不仅仅是那些随机生成的）的Map，因此这个ALL_TYPES的List是必要的
+    private static final List&lt;Class&lt;? extends Pet&gt;&gt; TYPES =
+            ALL_TYPES.subList(
+                    ALL_TYPES.indexOf(Mutt.class),
+                    ALL_TYPES.size());
+    @Override
+    public List&lt;Class&lt;? extends Pet&gt;&gt; types() {
+        return TYPES;
+    }
+    public static void main(String[] args) {
+        System.out.println(TYPES);
+        List&lt;Pet&gt; pets = new PetCreator().list(7);
+        System.out.println(pets);
+        //测试PetCreator
+        System.out.println(&quot;测试PetCreator&quot;);
+        new PetCounter().count(new PetCreator());
+    }
+}
+/*
+Output:
+[class reflection.pets.Mutt, class reflection.pets.Pug, class reflection.pets.EgyptianMau, class reflection.pets.Manx, class reflection.pets.Cymric, class reflection.pets.Rat, class reflection.pets.Mouse, class reflection.pets.Hamster]
+[Rat, Hamster, EgyptianMau, Rat, Rat, Mutt, Mutt]
+测试PetCreator
+Rat Hamster EgyptianMau Rat Rat Mutt Mutt EgyptianMau Rat Rat Cymric EgyptianMau Rat Mutt Rat Mutt Hamster Rat Mouse Cymric 
+{EgyptianMau=3, Rat=8, Cymric=2, Mouse=1, Cat=5, Manx=2, Rodent=11, Mutt=4, Dog=4, Pet=20, Hamster=2}
+*/
+</code></pre>
+<h3 id="1932-动态的instanceof">19.3.2　动态的<code>instanceof</code></h3>
+<p><code>Class.isInstance()</code>方法提供了一种动态验证对象类型的方式。因此，那些乏味的<code>instanceof</code>语句就都可以从PetCounter.java中删除了：</p>
+<pre><code class="language-java">package reflection.pets;
+
+import onjava.Pair;
+
+import java.util.*;
+import java.util.stream.*;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class PetCounter3 {
+    static class Counter extends
+            HashMap&lt;Class&lt;? extends Pet&gt;, Integer&gt; {
+        Counter() {
+            super(PetCreator.ALL_TYPES.stream()
+                    .map(type -&gt; Pair.make(type, 0))
+                    .collect(
+                            Collectors.toMap(Pair::key, Pair::value)));
+        }
+        public void count(Pet pet) {
+            // Class.isInstance()消除了大量的instanceof：
+            entrySet().stream()
+                    .filter(pair -&gt; pair.getKey().isInstance(pet))
+                    .forEach(pair -&gt;
+                            put(pair.getKey(), pair.getValue() + 1));
+        }
+        @Override public String toString() {
+            String result = entrySet().stream()
+                    .map(pair -&gt; String.format(&quot;%s=%s&quot;,
+                            pair.getKey().getSimpleName(),
+                            pair.getValue()))
+                    .collect(Collectors.joining(&quot;, &quot;));
+            return &quot;{&quot; + result + &quot;}&quot;;
+        }
+    }
+    public static void main(String[] args) {
+        Counter petCount = new Counter();
+        new PetCreator().stream()
+                .limit(20)
+                .peek(petCount::count)
+                .forEach(p -&gt; System.out.print(
+                        p.getClass().getSimpleName() + &quot; &quot;));
+        System.out.println(&quot;\n&quot; + petCount);
+    }
+}
+/*
+Output:Rat Hamster EgyptianMau Rat Rat Mutt Mutt EgyptianMau Rat Rat Cymric EgyptianMau Rat Mutt Rat Mutt Hamster Rat Mouse Cymric
+{Mutt=4, Manx=2, Dog=4, Rat=8, Cat=5, EgyptianMau=3, Rodent=11, Cymric=2, Hamster=2, Pet=20, Pug=0, Mouse=1}
+*/
+</code></pre>
+<p>为了对所有不同类型的<code>Pet</code>进行计数，<code>Counter</code>继承了<code>HashMap</code>并预加载了<code>PetCreator.ALL_TYPES</code>里的类型。如果不预加载<code>Map</code>里的数据，你最终就只能对随机生成的类型进行计数，而不能包括诸如<code>Pet</code>和<code>Cat</code>这样的基类型。</p>
+<p><code>isInstance()</code>方法使我们不再需要<code>instanceof</code>表达式。此外，这还意味着，如果想添加新的<code>Pet</code>类型，只需要更改<code>PetCreator.types</code>数组就可以，程序的其余部分不需要修改（但在使用<code>instanceof</code>表达式时就不可以）。</p>
+<p>我们重写了<code>toString()</code>方法来提供更易于阅读的输出，该输出与打印<code>Map</code>时看到的典型输出相似。</p>
+<h3 id="1933-递归计数">19.3.3　递归计数</h3>
+<p><code>PetCounter3.Counter</code>中的<code>Map</code>预先加载了所有不同的<code>Pet</code>类。我们还可以使用<code>Class.isAssignableFrom()</code>方法代替<code>Map</code>的预加载，来创建一个并不仅限于对<code>Pet</code>进行计数的通用工具：</p>
+<pre><code class="language-java">package onjava;
+
+import java.util.HashMap;
+import java.util.stream.Collectors;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class TypeCounter extends HashMap&lt;Class&lt;?&gt;, Integer&gt; {
+    private Class&lt;?&gt; baseType;
+    public TypeCounter(Class&lt;?&gt; baseType) {
+        this.baseType = baseType;
+    }
+    public void count(Object obj) {
+        Class&lt;?&gt; type = obj.getClass();
+        // isAssignableFrom()在运行时验证传递的对象实际上在不在我们希望的层次结构里。
+        if(!baseType.isAssignableFrom(type))
+            throw new RuntimeException(
+                    obj + &quot; incorrect type: &quot; + type +
+                            &quot;, should be type or subtype of &quot; + baseType);
+        countClass(type);
+    }
+    //countClass()首先对这个确切的类型进行计数。然后，如果其基类可以赋值给baseType，则对基类进行递归调用countClass()。
+    private void countClass(Class&lt;?&gt; type) {
+        Integer quantity = get(type);
+        put(type, quantity == null ? 1 : quantity + 1);
+        Class&lt;?&gt; superClass = type.getSuperclass();
+        if(superClass != null &amp;&amp;
+                baseType.isAssignableFrom(superClass)) {
+            countClass(superClass);
+        }
+    }
+    @Override
+    public String toString() {
+        String result = entrySet().stream()
+                .map(pair -&gt; String.format(&quot;%s=%s&quot;,
+                        pair.getKey().getSimpleName(),
+                        pair.getValue()))
+                .collect(Collectors.joining(&quot;, &quot;));
+        return &quot;{&quot; + result + &quot;}&quot;;
+    }
+}
+
+</code></pre>
+<p><code>count()</code>方法获取其参数的<code>Class</code>，并使用<code>isAssignableFrom()</code>在运行时验证传递的对象实际上在不在我们希望的层次结构里。<code>countClass()</code>首先对这个确切的类型进行计数。然后，如果其基类可以赋值给<code>baseType</code>，则对基类进行递归调用<code>countClass()</code>。</p>
+<pre><code class="language-java">package reflection;
+
+import onjava.TypeCounter;
+import reflection.pets.Pet;
+import reflection.pets.PetCreator;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/13
+ * @description:
+ */
+public class PetCounter4 {
+    public static void main(String[] args) {
+        TypeCounter counter = new TypeCounter(Pet.class);
+        new PetCreator().stream()
+                .limit(20)
+                .peek(counter::count)
+                .forEach(p -&gt; System.out.print(
+                        p.getClass().getSimpleName() + &quot; &quot;));
+        System.out.println(&quot;\n&quot; + counter);
+    }
+}
+/*
+Output:
+Rat Hamster EgyptianMau Rat Rat Mutt Mutt EgyptianMau Rat Rat Cymric EgyptianMau Rat Mutt Rat Mutt Hamster Rat Mouse Cymric 
+{Mutt=4, Rat=8, Manx=2, Dog=4, Mouse=1, EgyptianMau=3, Hamster=2, Cat=5, Rodent=11, Pet=20, Cymric=2}
+*/
+</code></pre>
+<h2 id="194-注册工厂">19.4　注册工厂</h2>
+<p>通过<code>Pet</code>层次结构来生成对象存在一个问题，即每次向层次结构中添加新类型的<code>Pet</code>时，都必须记住将其添加到PetCreator.java的列表里。在一个要经常添加类的系统中，这可能会成为问题。</p>
+<p>你可能会考虑为每个子类添加一个静态初始化器，这样初始化程序就可以将它的类添加到某个列表中。遗憾的是，静态初始化器只在类第一次加载时调用，所以你就碰上了一个“先有鸡还是先有蛋”的问题：生成器在它的列表中没有这个类，它永远不能创建这个类的对象，所以类不会被加载并放置在列表中。</p>
+<p>基本上，你必须自己手动创建这个列表（除非你编写一个工具来搜索并分析源代码，然后创建和编译这个列表）。所以最佳的做法就是把这个列表放在一个靠近中心的、位置明显的地方。我们感兴趣的这个层次结构的基类可能就是最好的地方。</p>
+<p>我们要做的另一处变更是使用<strong>工厂方法</strong>（Factory Method）设计模式来推迟对象的创建，将其交给类自己去完成。工厂方法可以被多态地调用，来创建恰当类型的对象。实际上，<code>java.util.function.Supplier</code>通过它的<code>T get()</code>方法提供了一个工厂方法的原型。<code>get()</code>方法可以通过协变返回类型为<code>Supplier</code>的不同子类返回对应的类型。</p>
+<p>在此示例中，基类<code>Part</code>包含了一个工厂对象（<code>Supplier&lt;Part&gt;</code>）的静态<code>List</code>。对于本应该由<code>get()</code>方法生成的类型，它们的工厂类都被添加到了列表<code>prototypes</code>里，从而“注册”到了基类中。比较特别的一点是，这些工厂是对象本身的实例。这个列表中的每个对象都是用于创建其他对象的<strong>原型</strong>：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class Part implements Supplier&lt;Part&gt; {
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
+    static List&lt;Supplier&lt;? extends Part&gt;&gt; prototypes =
+            Arrays.asList(
+                    new FuelFilter(),
+                    new AirFilter(),
+                    new CabinAirFilter(),
+                    new OilFilter(),
+                    new FanBelt(),
+                    new PowerSteeringBelt(),
+                    new GeneratorBelt()
+            );
+    private static Random rand = new Random(47);
+    @Override public Part get() {
+        int n = rand.nextInt(prototypes.size());
+        return prototypes.get(n).get();
+    }
+}
+class Filter extends Part {}
+
+class FuelFilter extends Filter {
+    @Override
+    public FuelFilter get() { return new FuelFilter(); }
+}
+
+class AirFilter extends Filter {
+    @Override
+    public AirFilter get() { return new AirFilter(); }
+}
+
+class CabinAirFilter extends Filter {
+    @Override
+    public CabinAirFilter get() {
+        return new CabinAirFilter();
+    }
+}
+
+class OilFilter extends Filter {
+    @Override
+    public OilFilter get() { return new OilFilter(); }
+}
+
+class Belt extends Part {}
+
+class FanBelt extends Belt {
+    @Override
+    public FanBelt get() { return new FanBelt(); }
+}
+
+class GeneratorBelt extends Belt {
+    @Override public GeneratorBelt get() {
+        return new GeneratorBelt();
+    }
+}
+
+class PowerSteeringBelt extends Belt {
+    @Override public PowerSteeringBelt get() {
+        return new PowerSteeringBelt();
+    }
+}
+public class RegisteredFactories{
+    public static void main(String[] args) {
+        Stream.generate(new Part())
+                .limit(10)
+                .forEach(System.out::println);
+    }
+}
+/*
+Output:
+GeneratorBelt
+CabinAirFilter
+GeneratorBelt
+AirFilter
+PowerSteeringBelt
+CabinAirFilter
+FuelFilter
+PowerSteeringBelt
+PowerSteeringBelt
+FuelFilter
+*/
+</code></pre>
+<p>并不是层次结构中的所有类都应该被实例化。以上示例中的<code>Filter</code>和<code>Belt</code>只是分类器，所以你不应该创建它们的实例，而只需要创建它们子类的实例（如果你尝试创建，只会得到基类<code>Part</code>的行为）。</p>
+<p><code>Part</code>实现了<code>Supplier&lt;Part&gt;</code>，所以它可以通过自己的<code>get()</code>提供其他的<code>Part</code>对象。如果调用了基类<code>Part</code>的<code>get()</code>方法（或者通过<code>generate()</code>调用<code>get()</code>），它会随机创建特定的<code>Part</code>子类型，每个子类型最终都继承自<code>Part</code>，并重写了<code>get()</code>方法来生成自身的对象。</p>
+<h2 id="195-instanceof与class的等价性">19.5　<code>Instanceof</code>与<code>Class</code>的等价性</h2>
+<p>当查询类型信息时，<code>instanceof</code>和<code>isInstance()</code>的效果是一样的，而它们与<code>Class</code>对象的直接比较有着重要的区别。下面这个示例演示了它们的不同之处：</p>
+<pre><code class="language-java">package reflection;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class Base {}
+class Derived extends Base {}
+
+public class FamilyVsExactType {
+    static void test(Object x) {
+        System.out.println(
+                &quot;Testing x of type &quot; + x.getClass());
+        System.out.println(
+                &quot;x instanceof Base &quot; + (x instanceof Base));
+        System.out.println(
+                &quot;x instanceof Derived &quot; + (x instanceof Derived));
+        System.out.println(
+                &quot;Base.isInstance(x) &quot; + Base.class.isInstance(x));
+        System.out.println(
+                &quot;Derived.isInstance(x) &quot; +
+                        Derived.class.isInstance(x));
+        System.out.println(
+                &quot;x.getClass() == Base.class &quot; +
+                        (x.getClass() == Base.class));
+        System.out.println(
+                &quot;x.getClass() == Derived.class &quot; +
+                        (x.getClass() == Derived.class));
+        System.out.println(
+                &quot;x.getClass().equals(Base.class)) &quot;+
+                        (x.getClass().equals(Base.class)));
+        System.out.println(
+                &quot;x.getClass().equals(Derived.class)) &quot; +
+                        (x.getClass().equals(Derived.class)));
+    }
+    public static void main(String[] args) {
+        test(new Base());
+        test(new Derived());
+    }
+}
+/*
+Output:
+Testing x of type class reflection.Base
+x instanceof Base true
+x instanceof Derived false
+Base.isInstance(x) true
+Derived.isInstance(x) false
+x.getClass() == Base.class true
+x.getClass() == Derived.class false
+x.getClass().equals(Base.class)) true
+x.getClass().equals(Derived.class)) false
+Testing x of type class reflection.Derived
+x instanceof Base true
+x instanceof Derived true
+Base.isInstance(x) true
+Derived.isInstance(x) true
+x.getClass() == Base.class false
+x.getClass() == Derived.class true
+x.getClass().equals(Base.class)) false
+x.getClass().equals(Derived.class)) true
+*/
+</code></pre>
+<p><code>test()</code>方法使用两种形式的<code>instanceof</code>来对其参数进行类型检查。然后获取<code>Class</code>引用，并使用<code>==</code>和<code>equals()</code>来测试<code>Class</code>对象的相等性。令人欣慰的是，<code>instanceof</code>和<code>isInstance()</code>产生了完全相同的结果，而<code>equals()</code>和<code>==</code>也一样。但从两组测试本身，我们可以得出不同的结论。<code>instanceof</code>与类型的概念保持了一致，它相当于表示“你是这个类，还是这个类的子类”。另一方面，如果你使用<code>==</code>比较实际的<code>Class</code>对象，则不需要考虑继承——它要么是确切的类型，要么不是。</p>
+<h2 id="196-运行时的类信息">19.6　运行时的类信息</h2>
+<p>如果不知道某个对象的确切类型，<code>instanceof</code>可以告诉你。但是，这里有一个限制：只有在编译时就知道的类型才能使用<code>instanceof</code>来检测，然后用获得的信息做一些有用的事情。换句话说，编译器必须知道你使用的所有类。</p>
+<p>乍一看，这似乎并不是一个多大的限制，但假设你获取了一个不在你的程序空间的对象引用——事实上，在编译时你的程序甚至无法获知这个对象所属的类。也许你只是从磁盘文件或网络连接中获得了一堆字节，然后被告知这些字节代表一个类。这个类在编译器为你的程序生成代码之后很久才出现，那你怎么才能使用这样的类呢？</p>
+<p>在传统的编程环境中不太可能会出现这种情况。但当我们进入一个更大的编程世界时，在一些重要场景下就会发生这种事情。首先就是基于组件的编程，在这种编程方式中，我们在构建应用程序的<strong>集成开发环境</strong>（IDE）中，通过<strong>快速应用程序开发</strong>（RAD） 模式来构建项目。这是一种可视化编程方法，它通过将代表不同组件的图标拖拽到表单中来创建程序，然后在程序里通过设置组件的属性值来配置它们。这种设计时的配置，要求组件都是可实例化的，并且要公开其部分信息，以允许程序员读取和修改组件的属性。此外，处理<strong>图形用户界面</strong>（GUI）事件的组件还必须公开相关方法的信息，以便IDE能够帮助程序员重写这些处理事件的方法。反射提供了一种检测可用方法并生成方法名称的机制。</p>
+<p>在运行时获取类信息的另一个吸引人的动机就是，希望提供通过网络在远程平台上创建和运行对象的能力。这称为<strong>远程方法调用</strong>（RMI），它允许Java程序将对象分布到多台机器上。需要这种分布能力的原因有许多，例如，你可能有一个计算密集型的任务，为了提高运算速度，可以将其分解为多个部分，分布到空闲的机器上。或者你可能希望将处理特定类型任务（例如客户-服务器体系结构中的“业务规则”）的代码置于特定的机器上，这样一来，这台机器就成了描述这些操作的公共场所，可以通过对它进行简单的修改来影响系统中的所有人。分布式计算还支持擅长特定任务的专用硬件——例如矩阵求逆——而这对通用程序来说就显得不太合适或者过于昂贵。</p>
+<p><code>Class</code>类和<code>java.lang.reflect</code>库一起支持了反射，这个库里包含<code>Field</code>、<code>Method</code>以及<code>Constructor</code>类（每个都实现了<code>Member</code>接口）。这些类型的对象是由JVM在运行时创建的，用来表示未知类中对应的成员。这样你就可以使用<code>Constructor</code>来创建新的对象，使用<code>get()</code>和<code>set()</code>方法来读取和修改与<code>Field</code>对象关联的字段，使用<code>invoke()</code>方法调用与<code>Method</code>对象关联的方法。另外，你还可以很便捷地调用<code>getFields()</code>、<code>getMethods()</code>和<code>getConstructors()</code>等方法，以返回表示字段、方法和构造器的对象数组（你可以在JDK文档中查找<code>Class</code>类来了解更多信息）。这样，匿名对象的类信息可以在运行时才完全确定下来，而在编译时就不需要知道任何信息。</p>
+<p>重要的是，要意识到反射机制并没有什么神奇之处。当使用反射与未知类型的对象打交道时，JVM会查看这个对象，确定它属于哪个特定的类。在用它做任何事情之前，必须先加载对应的<code>Class</code>对象。因此对于JVM来说，该特定类型的.class文件必须是可用的：要么在本地机器上，要么可以通过网络获得。通过反射，在编译时不可用的.class文件就可以在运行时被打开和检查了。</p>
+<h3 id="类方法提取器">类方法提取器</h3>
+<p>通常来说，你不会直接用到反射工具，但它有助于创建更动态的代码。反射在Java中可以用来支持其他特性，比如对象序列化（请参阅进阶卷附录E）。而且有时候动态提取有关类的信息也是很有用的。</p>
+<p>请考虑一个类方法提取器。如果我们查看一个类定义的源代码或其JDK文档，只能找到在<strong>这个类中</strong>被定义或被重写的方法。但对我们来说，可能还有更多继承自基类的可用方法。要找出这些方法既乏味又费时<strong>2</strong>。幸运的是，反射提供了一种方式，让我们能够编写简单的工具来自动展示完整的接口：</p>
+<blockquote>
+<p><strong>2</strong>在过去尤其是这样。不过现在Java的HTML文档有了重大改进，使得查看基类方法变得更加容易。</p>
+</blockquote>
+<pre><code class="language-java">package reflection;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.regex.Pattern;
+
+/**
+ * 使用反射来显示一个类的所有方法，
+ * 即使这个方法是在基类中定义的
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ *
+ */
+//CLI argument: reflection.ShowMethods
+public class ShowMethods {
+    private static String usage =
+            &quot;usage:\n&quot; +
+                    &quot;ShowMethods qualified.class.name\n&quot; +
+                    &quot;To show all methods in class or:\n&quot; +
+                    &quot;ShowMethods qualified.class.name word\n&quot; +
+                    &quot;To search for methods involving 'word'&quot;;
+    private static Pattern p = Pattern.compile(&quot;\\w+\\.&quot;);
+    public static void main(String[] args) {
+        if(args.length &lt; 1) {
+            System.out.println(usage);
+            System.exit(0);
+        }
+        int lines = 0;
+        try {
+            Class&lt;?&gt; c = Class.forName(args[0]);
+            Method[] methods = c.getMethods();
+            Constructor[] ctors = c.getConstructors();
+            if(args.length == 1) {
+                for(Method method : methods)
+                    System.out.println(
+                            p.matcher(
+                                    method.toString())
+                                    .replaceAll(&quot;&quot;));
+                for(Constructor ctor : ctors)
+                    System.out.println(
+                            p.matcher(ctor.toString()).replaceAll(&quot;&quot;));
+                lines = methods.length + ctors.length;
+            } else {
+                for(Method method : methods)
+                    if(method.toString().contains(args[1])) {
+                        System.out.println(p.matcher(
+                                method.toString()).replaceAll(&quot;&quot;));
+                        lines++;
+                    }
+                for(Constructor ctor : ctors)
+                    if(ctor.toString().contains(args[1])) {
+                        System.out.println(p.matcher(
+                                ctor.toString()).replaceAll(&quot;&quot;));
+                        lines++;
+                    }
+            }
+        } catch(ClassNotFoundException e) {
+            System.out.println(&quot;No such class: &quot; + e);
+        }
+    }
+}
+/*
+Output:
+public static void main(String[])
+public final void wait(long,int) throws InterruptedException
+public final void wait() throws InterruptedException
+public final native void wait(long) throws InterruptedException
+public boolean equals(Object)
+public String toString()
+public native int hashCode()
+public final native Class getClass()
+public final native void notify()
+public final native void notifyAll()
+public ShowMethods()
+
+*/
+</code></pre>
+<p><code>Class</code>类里的方法<code>getMethods()</code>和<code>getConstructors()</code>分别返回了<code>Method</code>对象的数组和<code>Constructor</code>对象的数组。这两个类都提供了对应的方法，来进一步解析它们所代表的方法，并获取其名称、参数和返回值的相关信息。但你也可以像上面的示例那样，只使用<code>toString()</code>方法来生成一个含有完整的方法签名的字符串。其他部分的代码提取了命令行信息，判断某个特定的方法签名是否与我们的目标字符串相匹配（使用<code>contains()</code>），并使用正则表达式去掉了名称限定符（在第18章中介绍过）。</p>
+<p><code>Class.forName()</code>生成的结果在编译时是未知的，因此所有的方法签名信息都是在运行时提取的。如果研究一下JDK文档中关于反射的部分，你就会发现，反射提供了足够的支持，来创建一个在编译时完全未知的对象，并调用此对象的方法（本书后面有这样的例子）。虽然一开始你可能认为自己永远不会用到这些功能，但是反射的价值可能会令你惊讶。上面的输出是从下面的命令行产生的：</p>
+<pre><code class="language-java">java ShowMethods ShowMethods
+</code></pre>
+<p>输出里包含了一个<code>public</code>的无参构造器，即使代码中没有定义任何构造器。你看到的这个构造器是由编译器自动合成的。如果将<code>ShowMethods</code>设为非<code>public</code>类（即包访问权限），那么这个自动合成的无参构造器就不会在输出中显示了。合成的无参构造器会自动获得与类相同的访问权限。</p>
+<p>你可以尝试运行带有<code>char</code>、<code>int</code>、<code>String</code>等额外参数的<code>java ShowMethods java.lang.String</code>。</p>
+<p>在编写程序时，如果你不记得一个类是否有某个特定的方法，并且也不想在JDK文档中查找索引或类层次结构，或者你不知道这个类是否可以对某个对象（比如<code>Color</code>对象）做些什么，那么这个工具可以替你节省很多时间。</p>
+<h2 id="197-动态代理">19.7　动态代理</h2>
+<p><strong>代理</strong>（proxy）是基本的设计模式之一。它是为了代替“实际”对象而插入的一个对象，从而提供额外的或不同的操作。这些操作通常涉及与“实际”对象的通信，因此代理通常充当中间人的角色。下面是一个用来展示代理结构的简单示例：</p>
+<pre><code class="language-java">package reflection;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+//代理对象和真实对象均实现的接口
+interface Interface {
+    void doSomething();
+    void somethingElse(String arg);
+}
+//真实对象
+class RealObject implements Interface {
+    @Override
+    public void doSomething() {
+        System.out.println(&quot;doSomething&quot;);
+    }
+    @Override
+    public void somethingElse(String arg) {
+        System.out.println(&quot;somethingElse &quot; + arg);
+    }
+}
+//代理对象
+class SimpleProxy implements Interface {
+    //传入的真实对象
+    private Interface proxied;
+    //完成真实对象的初始化
+    SimpleProxy(Interface proxied) {
+        this.proxied = proxied;
+    }
+    @Override
+    public void doSomething() {
+        //代理对象完成的额外操作
+        System.out.println(&quot;SimpleProxy doSomething&quot;);
+        //真实对象完成的工作
+        proxied.doSomething();
+    }
+    @Override
+    public void somethingElse(String arg) {
+        System.out.println(
+                &quot;SimpleProxy somethingElse &quot; + arg);
+        proxied.somethingElse(arg);
+    }
+}
+
+class SimpleProxyDemo {
+    public static void consumer(Interface iface) {
+        iface.doSomething();
+        iface.somethingElse(&quot;bonobo&quot;);
+    }
+    public static void main(String[] args) {
+        consumer(new RealObject());
+        System.out.println(&quot;-------这里划分真实和代理-------&quot;);
+        consumer(new SimpleProxy(new RealObject()));
+    }
+}
+/*
+Output:
+doSomething
+somethingElse bonobo
+SimpleProxy doSomething
+doSomething
+SimpleProxy somethingElse bonobo
+somethingElse bonobo
+*/
+</code></pre>
+<p><code>consumer()</code>方法接受一个<code>Interface</code>参数，所以它不知道自己得到的是一个<code>RealObject</code>还是一个<code>SimpleProxy</code>，两者都实现了<code>Interface</code>接口。<code>SimpleProxy</code>被插入到客户端和<code>RealObject</code>之间来执行操作，然后调用<code>RealObject</code>的相同方法。</p>
+<p>在任何时候，如果你想要将额外的操作从“实际”对象中分离出来，特别是当你没有使用这些额外操作，但希望很轻松地就能改成使用，或反过来，这时代理就很有用了（设计模式的关注点就是封装修改——因此你需要做对应的修改来适应模式）。例如，如果你希望跟踪对<code>RealObject</code>中方法的调用，或者测量此类调用的开销，该怎么办？你肯定不希望在应用程序中包含这些代码，而代理可以让你很容易地添加或删除它们。</p>
+<p>Java的<strong>动态代理</strong>（dynamic proxy）比代理更进一步，它可以动态地创建代理，并动态地处理对所代理方法的调用。在动态代理上进行的所有调用都会被重定向到一个<strong>调用处理器</strong>（invocation handler）上，这个调用处理器的工作就是发现这是什么调用，然后决定如何处理它。下面是用动态代理重写的SimpIeProxyDemo.java：</p>
+<pre><code class="language-java">package reflection;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+
+//动态调用处理器，实现了Java自身的调用处理器接口
+class DynamicProxyHandler implements InvocationHandler {
+    private Object proxied;
+    DynamicProxyHandler(Object proxied) {
+        this.proxied = proxied;
+    }
+    @Override
+    //每个被代理的方法都会到这里来，决定自己应该干什么。后两个参数可以构成方法签名。
+    public Object invoke(Object proxy, Method method, Object[] args)
+            throws Throwable {
+        System.out.println(
+                &quot;**** proxy: &quot; + proxy.getClass() +
+                        &quot;, method: &quot; + method + &quot;, args: &quot; + args);
+        if(args != null)
+            for(Object arg : args)
+                System.out.println(&quot;  &quot; + arg);
+        return method.invoke(proxied, args);
+    }
+}
+
+class SimpleDynamicProxy {
+    public static void consumer(Interface iface) {
+        iface.doSomething();
+        iface.somethingElse(&quot;bonobo&quot;);
+    }
+    public static void main(String[] args) {
+        RealObject real = new RealObject();
+        consumer(real);
+        // 插入一个代理
+        //我们通过调用静态方法Proxy.newProxyInstance()来创建动态代理，它需要三个参数：一个类加载器（通常可以从一个已经加载的对象里获取其类加载器，然后传递给它就可以了），一个希望代理实现的接口列表（不是类或抽象类），以及InvocationHandler接口的一个实现。动态代理会将所有调用重定向到调用处理器，因此调用处理器的构造器通常会获得“实际”对象的引用，以便它在执行完自己的中间任务后可以转发请求。
+        Interface proxy = (Interface) Proxy.newProxyInstance(
+                Interface.class.getClassLoader(),
+                new Class[]{ Interface.class },
+                new DynamicProxyHandler(real));
+        //再次调用
+        consumer(proxy);
+    }
+}
+/*
+Output:
+doSomething
+somethingElse bonobo
+**** proxy: class reflection.$Proxy0, method: public abstract void reflection.Interface.doSomething(), args: null
+doSomething
+**** proxy: class reflection.$Proxy0, method: public abstract void reflection.Interface.somethingElse(java.lang.String), args: [Ljava.lang.Object;@1f17ae12
+  bonobo
+somethingElse bonobo
+*/
+</code></pre>
+<p>我们通过调用静态方法<code>Proxy.newProxyInstance()</code>来创建动态代理，它需要三个参数：一个类加载器（通常可以从一个已经加载的对象里获取其类加载器，然后传递给它就可以了），一个希望代理实现的接口列表（不是类或抽象类），以及<code>InvocationHandler</code>接口的一个实现。动态代理会将所有调用重定向到调用处理器，因此调用处理器的构造器通常会获得“实际”对象的引用，以便它在执行完自己的中间任务后可以转发请求。</p>
+<p>代理对象传递给了<code>invoke()</code>方法来处理，以防你需要区分请求的来源，但是在许多情况下，你并不关心这一点。不过，在<code>invoke()</code>内部调用代理的方法时需要小心，因为对接口的调用是通过代理进行重定向的。</p>
+<p>通常，你会执行被代理的操作，然后使用<code>Method.invoke()</code>方法将请求转发给被代理的对象，并传入必要的参数。乍一看这可能有些受限，就好像你只能执行通用的操作一样。但是，你可以过滤某些方法调用，同时又放行其他的方法调用：</p>
+<pre><code class="language-java">package reflection;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class MethodSelector implements InvocationHandler {
+    private Object proxied;
+    MethodSelector(Object proxied) {
+        this.proxied = proxied;
+    }
+    @Override public Object
+    invoke(Object proxy, Method method, Object[] args)
+            throws Throwable {
+        if(method.getName().equals(&quot;interesting&quot;))
+            System.out.println(
+                    &quot;Proxy detected the interesting method&quot;);
+        return method.invoke(proxied, args);
+    }
+}
+
+interface SomeMethods {
+    void boring1();
+    void boring2();
+    void interesting(String arg);
+    void boring3();
+}
+
+class Implementation implements SomeMethods {
+    @Override public void boring1() {
+        System.out.println(&quot;boring1&quot;);
+    }
+    @Override public void boring2() {
+        System.out.println(&quot;boring2&quot;);
+    }
+    @Override public void interesting(String arg) {
+        System.out.println(&quot;interesting &quot; + arg);
+    }
+    @Override public void boring3() {
+        System.out.println(&quot;boring3&quot;);
+    }
+}
+
+class SelectingMethods {
+    public static void main(String[] args) {
+        SomeMethods proxy =
+                (SomeMethods) Proxy.newProxyInstance(
+                        SomeMethods.class.getClassLoader(),
+                        new Class[]{ SomeMethods.class },
+                        new MethodSelector(new Implementation()));
+        proxy.boring1();
+        proxy.boring2();
+        proxy.interesting(&quot;bonobo&quot;);
+        proxy.boring3();
+    }
+}
+/*
+Output:
+boring1
+boring2
+Proxy detected the interesting method
+interesting bonobo
+boring3
+*/
+</code></pre>
+<p>在这里，我们只是查看了方法名称，但你还可以查看方法签名的其他方面，甚至可以搜索特定的参数值。</p>
+<p>动态代理并不是日常使用的工具，但它可以很好地解决某些类型的问题。在Erich Gamma等人撰写的《设计模式：可复用面向对象软件的基础》一书和本书的进阶卷第8章中，你可以了解更多有关代理和其他设计模式的信息。</p>
+<h2 id="198-使用optional">19.8　使用<code>Optional</code></h2>
+<p>当使用内置的<code>null</code>来表示对象不存在时，为了确保安全，你必须在每次使用对象的引用时都测试一下它是否为<code>null</code>。这会变得很乏味，并产生冗长的代码。**问题在于<code>null</code>没有自己的行为，而当你尝试用它做任何事情时，都会产生一个<code>NullPointerException</code>。**我们在第13章中介绍过<code>java.util.Optional</code>，它创建了一个简单的代理来屏蔽潜在的<code>null</code>值。<code>Optional</code>对象会阻止你的代码直接抛出<code>NullPointerException</code>。</p>
+<p>尽管<code>Optional</code>是在Java 8中引入来支持<code>Stream</code>的，但它是一个通用工具，可以应用于普通类就证明了这一点。这个主题之所以包含在本章中，是因为涉及运行时检查。</p>
+<p>在实际应用中，到处使用<code>Optional</code>是没有意义的——有时判断一下是否为<code>null</code>没什么不好，有时你可以合理地假设自己不会遇到<code>null</code>，有时甚至通过<code>NullPointerException</code>来检测异常也是可以接受的。<code>Optional</code>看起来在“更接近数据”的地方最有用，此时对象代表问题空间中的实体。举个简单的例子，许多系统里有<code>Person</code>类，但在代码中，有些情况下你并没有获得这样一个实际的对象（或者你可能有，但还没有关于那个对象的所有信息），所以通常你会使用一个<code>null</code>引用来表示，然后对其进行检查。而现在我们就可以使用<code>Optional</code>来代替了：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.Optional;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class Person {
+    public final Optional&lt;String&gt; first;
+    public final Optional&lt;String&gt; last;
+    public final Optional&lt;String&gt; address;
+    // 省略其余代码
+    public final boolean empty;
+    Person(String first, String last, String address) {
+        this.first = Optional.ofNullable(first);
+        this.last = Optional.ofNullable(last);
+        this.address = Optional.ofNullable(address);
+        empty = !this.first.isPresent()
+                &amp;&amp; !this.last.isPresent()
+                &amp;&amp; !this.address.isPresent();
+    }
+    Person(String first, String last) {
+        this(first, last, null);
+    }
+    Person(String last) { this(null, last, null); }
+    Person() { this(null, null, null); }
+    @Override public String toString() {
+        if(empty)
+            return &quot;&lt;Empty&gt;&quot;;
+        return (first.orElse(&quot;&quot;) +
+                &quot; &quot; + last.orElse(&quot;&quot;) +
+                &quot; &quot; + address.orElse(&quot;&quot;)).trim();
+    }
+    public static void main(String[] args) {
+        System.out.println(new Person());
+        System.out.println(new Person(&quot;Smith&quot;));
+        System.out.println(new Person(&quot;Bob&quot;, &quot;Smith&quot;));
+        System.out.println(new Person(&quot;Bob&quot;, &quot;Smith&quot;,
+                &quot;11 Degree Lane, Frostbite Falls, MN&quot;));
+    }
+}
+/*
+Output:
+&lt;Empty&gt;
+Smith
+Bob Smith
+Bob Smith 11 Degree Lane, Frostbite Falls, MN
+*/
+</code></pre>
+<p><code>Person</code>的设计有时被称为“数据传输对象”。注意，所有的字段都是<code>public</code>和<code>final</code>的，因此没有getter和setter方法。也就是说，<code>Person</code>是<strong>不可变</strong>的——你只能用构造器设置值，然后读取这些值，但你不能修改它们（字符串本身是不可变的，所以你不能修改字符串的内容，也不能给字段重新赋值）。要更改<code>Person</code>，你只能将其替换为新的<code>Person</code>对象。<code>empty</code>字段在构造期间赋值，以便轻松地检查这个<code>Person</code>是否代表一个空对象。</p>
+<p>任何使用<code>Person</code>的人在访问这些字符串字段时都会被强制使用<code>Optional</code>接口，因此不会意外触发<code>NullPointerException</code>。</p>
+<p>现在假设你已经为自己的惊人创意获得了大量风险投资，并准备好了要招聘人员。但在职位空缺时，你可以用<code>Optional</code>来为<code>Position</code>的<code>Person</code>字段提供占位符：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.Optional;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class EmptyTitleException extends RuntimeException {}
+
+class Position {
+    private String title;
+    private Person person;
+    Position(String jobTitle, Person employee) {
+        setTitle(jobTitle);
+        setPerson(employee);
+    }
+    Position(String jobTitle) {
+        this(jobTitle, null);
+    }
+    public String getTitle() { return title; }
+    public void setTitle(String newTitle) {
+        // 如果newTitle是null，则抛出EmptyTitleException：
+        title = Optional.ofNullable(newTitle)
+                .orElseThrow(EmptyTitleException::new);
+    }
+    public Person getPerson() { return person; }
+    public void setPerson(Person newPerson) {
+        // 如果newPerson是null，则使用一个空的Person：
+        person = Optional.ofNullable(newPerson)
+                .orElse(new Person());
+    }
+    @Override
+    public String toString() {
+        return &quot;Position: &quot; + title +
+                &quot;, Employee: &quot; + person;
+    }
+    public static void main(String[] args) {
+        System.out.println(new Position(&quot;CEO&quot;));
+        System.out.println(new Position(&quot;Programmer&quot;,
+                new Person(&quot;Arthur&quot;, &quot;Fonzarelli&quot;)));
+        try {
+            new Position(null);
+        } catch(Exception e) {
+            System.out.println(&quot;caught &quot; + e);
+        }
+    }
+}
+/*
+Output:
+Position: CEO, Employee: &lt;Empty&gt;
+Position: Programmer, Employee: Arthur Fonzarelli
+caught reflection.EmptyTitleException
+*/
+</code></pre>
+<p>这个示例以不同的方式来使用<code>Optional</code>。注意，<code>title</code>和<code>person</code>都是普通字段，不受<code>Optional</code>的保护。但是，修改这些字段唯一的方法是通过<code>setTitle()</code>和<code>setPerson()</code>，而这两者都使用了<code>Optional</code>的功能来对字段加以限制。</p>
+<p>我们想要保证<code>title</code>永远不会被设置为<code>null</code>。在<code>setTitle()</code>方法中，我们可以自己检查<code>newTitle</code>参数。但是函数式编程的很大一部分就是能够重用经过尝试和验证的功能，即便这些功能通常很小，这样可以减少手动编写代码时犯的各种小错误。所以我们用<code>ofNullable()</code>把<code>newTitle</code>转换成<code>Optional</code>，这意味着如果<code>newTitle</code>是<code>null</code>，它将生成一个<code>Optional.empty()</code>。然后立即获取该<code>Optional</code>结果，并调用它的<code>orElseThrow()</code>方法，此时如果<code>newTitle</code>为<code>null</code>，将得到一个异常。我们并没有将该字段存储为<code>Optional</code>，但使用了<code>Optional</code>的功能来对<code>title</code>字段施加想要的约束。</p>
+<p><code>EmptyTitleException</code>是一个<code>RuntimeException</code>，因为它代表了一个程序员错误。在这个方案里你仍然得到了一个异常，但你是在错误发生的时候得到它的——也就是当<code>null</code>被传递给<code>setTitle()</code>时——而不是在程序中的其他地方，如果在其他地方的话你就不得不对程序进行调试才能发现问题所在。此外，<code>EmptyTitleException</code>的使用有助于进一步定位错误。</p>
+<p><code>person</code>字段具有不同的约束：如果尝试将其设置为<code>null</code>，它会自动设置为一个空的<code>Person</code>对象。我们使用与之前相同的方法将其转换为<code>Option</code>，但在这个例子中，当提取结果时，我们使用了<code>orElse(new Person())</code>将<code>null</code>替换成空的<code>Person</code>来插入。</p>
+<p>对于<code>Position</code>，我们不需要创建“空”的标记或方法，因为如果<code>person</code>字段的值是一个空的<code>Person</code>对象，这就意味着这个<code>Position</code>还是处于空缺状态。稍后，你可能会发现必须在此处添加一些明确的内容，但是根据YAGNI<strong>3</strong>（You Aren't Going to Need It，你并不需要它）原则，在初稿中只“尝试最简单且可行的事情”，直到程序的某些方面要求你添加额外的功能，而不是一开始就假设它是必要的。</p>
+<p><strong>3****极限编程</strong>（Extreme Programming, XP）的一项宗旨就是“尝试最简单且可行的事情”。</p>
+<p>注意<code>Staff</code>类轻松地忽略了<code>Optional</code>的存在，尽管你知道它们在那里，保护你免受<code>NullPointerException</code>的影响：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.ArrayList;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public class Staff extends ArrayList&lt;Position&gt; {
+    public void add(String title, Person person) {
+        add(new Position(title, person));
+    }
+    public void add(String... titles) {
+        for(String title : titles)
+            add(new Position(title));
+    }
+    public Staff(String... titles) { add(titles); }
+    public boolean positionAvailable(String title) {
+        for(Position position : this)
+            if(position.getTitle().equals(title) &amp;&amp;
+                    position.getPerson().empty)
+                return true;
+        return false;
+    }
+    public void fillPosition(String title, Person hire) {
+        for(Position position : this)
+            if(position.getTitle().equals(title) &amp;&amp;
+                    position.getPerson().empty) {
+                position.setPerson(hire);
+                return;
+            }
+        throw new RuntimeException(
+                &quot;Position &quot; + title + &quot; not available&quot;);
+    }
+    public static void main(String[] args) {
+        Staff staff = new Staff(&quot;President&quot;, &quot;CTO&quot;,
+                &quot;Marketing Manager&quot;, &quot;Product Manager&quot;,
+                &quot;Project Lead&quot;, &quot;Software Engineer&quot;,
+                &quot;Software Engineer&quot;, &quot;Software Engineer&quot;,
+                &quot;Software Engineer&quot;, &quot;Test Engineer&quot;,
+                &quot;Technical Writer&quot;);
+        staff.fillPosition(&quot;President&quot;,
+                new Person(&quot;Me&quot;, &quot;Last&quot;, &quot;The Top, Lonely At&quot;));
+        staff.fillPosition(&quot;Project Lead&quot;,
+                new Person(&quot;Janet&quot;, &quot;Planner&quot;, &quot;The Burbs&quot;));
+        if(staff.positionAvailable(&quot;Software Engineer&quot;))
+            staff.fillPosition(&quot;Software Engineer&quot;,
+                    new Person(
+                            &quot;Bob&quot;, &quot;Coder&quot;, &quot;Bright Light City&quot;));
+        System.out.println(staff);
+    }
+}
+/*
+Output:
+[Position: President, Employee: Me Last The Top, Lonely At, Position: CTO, Employee: &lt;Empty&gt;, Position: Marketing Manager, Employee: &lt;Empty&gt;, Position: Product Manager, Employee: &lt;Empty&gt;, Position: Project Lead, Employee: Janet Planner The Burbs, Position: Software Engineer, Employee: Bob Coder Bright Light City, Position: Software Engineer, Employee: &lt;Empty&gt;, Position: Software Engineer, Employee: &lt;Empty&gt;, Position: Software Engineer, Employee: &lt;Empty&gt;, Position: Test Engineer, Employee: &lt;Empty&gt;, Position: Technical Writer, Employee: &lt;Empty&gt;]
+*/
+</code></pre>
+<p>在某些地方可能仍然需要检查<code>Optional</code>，这与检查<code>null</code>没有什么不同，但在其他地方（例如本例中的<code>toString()</code>转换）不需要进行额外的检查，可以直接假设所有的对象引用都是有效的。</p>
+<h3 id="1981-标签接口">19.8.1　标签接口</h3>
+<p>有时使用<strong>标签接口</strong>（tagging interface）来表示可空性更方便。标签接口没有元素，我们只是将它的名称当作标签来使用：</p>
+<pre><code class="language-java">package onjava;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public interface Null { }
+</code></pre>
+<p>如果你使用的是接口而不是具体类，那么就可以使用<code>DynamicProxy</code>来自动生成<code>Null</code>。假设有一个<code>Robot</code>接口，它定义了名称、模型以及一个描述了自身功能的<code>List&lt;Operation&gt;</code>：</p>
+<pre><code class="language-java">package reflection;
+
+import onjava.Null;
+
+import java.util.*;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public interface Robot {
+    String name();
+    String model();
+    List&lt;Operation&gt; operations();
+    static void test(Robot r) {
+        if (r instanceof Null)
+            System.out.println(&quot;[Null Robot]&quot;);
+        System.out.println(&quot;Robot name: &quot; + r.name());
+        System.out.println(&quot;Robot model: &quot; + r.model());
+        for (Operation operation : r.operations()) {
+            System.out.println(operation.description.get());
+            operation.command.run();
+        }
+    }
+}
+</code></pre>
+<p>可以通过调用<code>operations()</code>来访问<code>Robot</code>的服务。<code>Robot</code>还包含了一个静态方法来执行测试。</p>
+<p><code>Operation</code>包含一个描述和一个命令[这是一种<strong>命令模式</strong>（Command pattern）]。它们被定义为对函数式接口的引用，这样你就可以将lambda表达式或方法引用传递给<code>Operation</code>的构造器：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.function.Supplier;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public class Operation {
+    public final Supplier&lt;String&gt; description;
+    public final Runnable command;
+    public
+    Operation(Supplier&lt;String&gt; descr, Runnable cmd) {
+        description = descr;
+        command = cmd;
+    }
+}
+</code></pre>
+<p>现在可以创建一个扫雪的<code>Robot</code>：</p>
+<pre><code class="language-java">package reflection;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public class SnowRobot implements Robot {
+    private String name;
+    public SnowRobot(String name) {
+        this.name = name;
+    }
+    @Override
+    public String name() { return name; }
+    @Override
+    public String model() {
+        return &quot;SnowBot Series 11&quot;;
+    }
+    private List&lt;Operation&gt; ops = Arrays.asList(
+            new Operation(
+                    () -&gt; name + &quot; can shovel snow&quot;,
+                    () -&gt; System.out.println(
+                            name + &quot; shoveling snow&quot;)),
+            new Operation(
+                    () -&gt; name + &quot; can chip ice&quot;,
+                    () -&gt; System.out.println(name + &quot; chipping ice&quot;)),
+            new Operation(
+                    () -&gt; name + &quot; can clear the roof&quot;,
+                    () -&gt; System.out.println(
+                            name + &quot; clearing roof&quot;)));
+    @Override
+    public List&lt;Operation&gt; operations() { return ops; }
+    public static void main(String[] args) {
+        Robot.test(new SnowRobot(&quot;Slusher&quot;));
+    }
+}
+/*
+Output:
+Robot name: Slusher
+Robot model: SnowBot Series 11
+Slusher can shovel snow
+Slusher shoveling snow
+Slusher can chip ice
+Slusher chipping ice
+Slusher can clear the roof
+Slusher clearing roof
+
+*/
+</code></pre>
+<p>可能会有许多不同类型的<code>Robot</code>，而且对于每种<code>Robot</code>类型，如果为<code>Null</code>，则做一些特殊操作——本例中会提供<code>Robot</code>的确切类型信息。此信息由动态代理捕获：</p>
+<pre><code class="language-java">package reflection;
+
+import onjava.Null;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class NullRobotProxyHandler implements InvocationHandler {
+    private String nullName;
+    //在这里对代理对象进行了初始化
+    private Robot proxied = new NRobot();
+    NullRobotProxyHandler(Class&lt;? extends Robot&gt; type) {
+        nullName = type.getSimpleName() + &quot; NullRobot&quot;;
+    }
+    private class NRobot implements Null, Robot {
+        @Override
+        public String name() { return nullName; }
+        @Override
+        public String model() { return nullName; }
+        @Override public List&lt;Operation&gt; operations() {
+            return Collections.emptyList();
+        }
+    }
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args)
+            throws Throwable {
+        //在创建类的时候需要完成的操作已经完成了，所以代理这里也不需要做什么了，直接返回就可以
+        return method.invoke(proxied, args);
+    }
+}
+
+public class NullRobot {
+    public static Robot
+    newNullRobot(Class&lt;? extends Robot&gt; type) {
+        return (Robot) Proxy.newProxyInstance(
+                NullRobot.class.getClassLoader(),
+                //希望实现的接口是new方法，希望返回一个满足Null以及Robot的类
+                new Class[]{ Null.class, Robot.class },
+                new NullRobotProxyHandler(type));
+    }
+    public static void main(String[] args) {
+        Stream.of(
+                new SnowRobot(&quot;SnowBee&quot;),
+                newNullRobot(SnowRobot.class)
+        ).forEach(Robot::test);
+    }
+}
+/*
+Output:
+Robot name: SnowBee
+Robot model: SnowBot Series 11
+SnowBee can shovel snow
+SnowBee shoveling snow
+SnowBee can chip ice
+SnowBee chipping ice
+SnowBee can clear the roof
+SnowBee clearing roof
+[Null Robot]
+Robot name: SnowRobot NullRobot
+Robot model: SnowRobot NullRobot
+
+*/
+</code></pre>
+<p>每当需要一个空的<code>Robot</code>对象时，调用<code>newNullRobot()</code>即可，传递给它想要的<code>Robot</code>类型，它会返回一个代理。代理会同时满足<code>Robot</code>和<code>Null</code>接口的要求，并提供它所代理的类型的特定名称。</p>
+<h3 id="1982-模拟对象和桩">19.8.2　模拟对象和桩</h3>
+<p><strong>模拟对象</strong>（Mock Object）和<strong>桩</strong>（Stub）是<code>Optional</code>的逻辑变体。这两个都是在最终的程序中使用的“实际”对象的代理。模拟对象和桩都假装是提供真实信息的实际对象，而不会像<code>Optional</code>那样隐藏对象，甚至包括null对象。</p>
+<p>模拟对象和桩之间的区别在于程度的不同。模拟对象往往是轻量级和自测试的，通常我们创建很多模拟对象是为了处理各种不同的测试情况。桩只返回桩数据，它通常是重量级的，并且经常在测试之间重用。桩可以根据它们的调用方式，通过配置进行更改。所以桩是一个复杂的对象，它只做一件事情。如果你需要做很多事情，通常会创建很多小而简单的模拟对象。</p>
+<h2 id="199-接口和类型信息">19.9　接口和类型信息</h2>
+<p><code>interface</code>关键字的一个重要目标是允许程序员隔离组件，从而减少耦合。如果只和接口通信，那么就可以实现这一目标，但是通过类型信息可能会绕过它——接口并不一定保证解耦。假设我们从一个接口开始：</p>
+<pre><code class="language-java">package reflection.interfacea;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public interface A {
+    void f();
+}
+</code></pre>
+<p>下面的示例显示了如何偷偷访问实际的实现类型：</p>
+<pre><code class="language-java">package reflection;
+
+import reflection.interfacea.A;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class B implements A {
+    @Override
+    public void f() {}
+
+    public void g() {}
+}
+
+public class InterfaceViolation {
+    public static void main(String[] args) {
+        A a = new B();
+        a.f();
+        // a.g(); // 编译错误
+        System.out.println(a.getClass().getName());
+        if(a instanceof B) {
+            B b = (B)a;
+            b.g();
+        }
+    }
+}
+//Output:reflection.B
+</code></pre>
+<p>通过反射，可以发现<code>a</code>实际上是被当作<code>B</code>实现的。通过强制转型为<code>B</code>，我们可以调用不在<code>A</code>中的方法。</p>
+<p>这是完全合法并且可接受的，但你可能不希望客户程序员这样做，因为这给了他们一个机会，让他们的代码与你的代码耦合程度超出你的期望。也就是说，你可能认为<code>interface</code>关键字正在保护着你，但事实并非如此，而且本例中使用<code>B</code>来实现<code>A</code>这一事实，实际上是公开可见的<strong>4</strong>。</p>
+<p><strong>4</strong>最著名的案例是<code>Windows</code>操作系统，它有一个已发布API供你调用，还有一组未发布但可见的函数，可以让你发现并调用。为了解决问题，程序员使用了隐藏的API函数，这迫使微软公司将它们作为公共API的一部分进行维护。这成了使微软公司投入巨额成本和大量精力的无底洞。</p>
+<p>一种解决方案是直接声明，如果程序员决定使用实际的类而不是接口，他们就得自己承担后果。在许多情况下这可能是合理的，但如果事实并非如此，你就需要实施更严格的控制。</p>
+<p>最简单的方法是使用包访问权限来实现，这样包外的客户就看不到它了：</p>
+<pre><code class="language-java">package reflection.packageaccess;
+
+import reflection.interfacea.A;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class C implements A {
+    @Override public void f() {
+        System.out.println(&quot;public C.f()&quot;);
+    }
+    public void g() {
+        System.out.println(&quot;public C.g()&quot;);
+    }
+    void u() {
+        System.out.println(&quot;package C.u()&quot;);
+    }
+    protected void v() {
+        System.out.println(&quot;protected C.v()&quot;);
+    }
+    private void w() {
+        System.out.println(&quot;private C.w()&quot;);
+    }
+}
+
+public class HiddenC {
+    public static A makeA() { return new C(); }
+}
+</code></pre>
+<p>类<code>HiddenC</code>是这个包唯一的<code>public</code>部分，调用它时会生成一个<code>A</code>接口。即使<code>makeA()</code>返回了一个<code>C</code>类型，在包外仍然不能使用除<code>A</code>外的任何事物，因为你不能在包外命名<code>C</code>。</p>
+<p>现在，如果尝试向下转型为<code>C</code>，你会发现无法做到，因为包外没有可用的<code>C</code>类型：</p>
+<pre><code class="language-java">package reflection;
+
+import reflection.interfacea.A;
+import reflection.packageaccess.HiddenC;
+
+import java.lang.reflect.Method;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+public class HiddenImplementation {
+    public static void
+    main(String[] args) throws Exception {
+        A a = HiddenC.makeA();
+        a.f();
+        System.out.println(a.getClass().getName());
+        // 编译错误：无法找到符号'C'：
+    /* if(a instanceof C) {
+      C c = (C)a;
+      c.g();
+    } */
+        // 呀！反射仍然允许我们调用g()：
+        callHiddenMethod(a, &quot;g&quot;);
+        // 甚至访问权限更小的方法：
+        callHiddenMethod(a, &quot;u&quot;);
+        callHiddenMethod(a, &quot;v&quot;);
+        callHiddenMethod(a, &quot;w&quot;);
+    }
+    static void
+    callHiddenMethod(Object a, String methodName)
+            throws Exception {
+        Method g =
+                a.getClass().getDeclaredMethod(methodName);
+        g.setAccessible(true);
+        g.invoke(a);
+    }
+}
+/*
+Output:public C.f()
+reflection.packageaccess.C
+public C.g()
+package C.u()
+protected C.v()
+private C.w()
+*/
+</code></pre>
+<p>你仍然可以使用反射来访问并调用<strong>所有</strong>的方法，甚至包括<code>private</code>的方法！如果你知道方法的名称，就可以通过调用<code>Method</code>对象的<code>setAccessible(true)</code>来设置，从而让这个方法可以被调用，就像<code>callHiddenMethod()</code>中所示的那样。</p>
+<p>你可能认为通过仅发布已编译的代码可以防止这种情况，但这不是解决方案。只需要运行JDK自带的反编译器<code>javap</code>就能绕过它。</p>
+<p>因此，任何人都可以获取你最私有的方法的名称和签名，并调用它们。</p>
+<p>如果将接口实现为私有内部类会怎样？下面的示例展示了这种情况：</p>
+<pre><code class="language-java">package reflection;
+
+import reflection.interfacea.A;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class InnerA {
+    private static class C implements A {
+        @Override public void f() {
+            System.out.println(&quot;public C.f()&quot;);
+        }
+        public void g() {
+            System.out.println(&quot;public C.g()&quot;);
+        }
+        void u() {
+            System.out.println(&quot;package C.u()&quot;);
+        }
+        protected void v() {
+            System.out.println(&quot;protected C.v()&quot;);
+        }
+        private void w() {
+            System.out.println(&quot;private C.w()&quot;);
+        }
+    }
+    public static A makeA() { return new C(); }
+}
+
+public class InnerImplementation {
+    public static void
+    main(String[] args) throws Exception {
+        A a = InnerA.makeA();
+        a.f();
+        System.out.println(a.getClass().getName());
+        // 反射仍然能访问私有类内部：
+        HiddenImplementation.callHiddenMethod(a, &quot;g&quot;);
+        HiddenImplementation.callHiddenMethod(a, &quot;u&quot;);
+        HiddenImplementation.callHiddenMethod(a, &quot;v&quot;);
+        HiddenImplementation.callHiddenMethod(a, &quot;w&quot;);
+    }
+}
+/*
+Output:
+public C.f()
+reflection.InnerA$C
+public C.g()
+package C.u()
+protected C.v()
+private C.w()*/
+</code></pre>
+<p>这里对反射仍然没有隐藏任何东西。那么匿名类呢？</p>
+<pre><code class="language-java">package reflection;
+
+import reflection.interfacea.A;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class AnonymousA {
+    public static A makeA() {
+        return new A() {
+            @Override public void f() {
+                System.out.println(&quot;public C.f()&quot;);
+            }
+            public void g() {
+                System.out.println(&quot;public C.g()&quot;);
+            }
+            void u() {
+                System.out.println(&quot;package C.u()&quot;);
+            }
+            protected void v() {
+                System.out.println(&quot;protected C.v()&quot;);
+            }
+            private void w() {
+                System.out.println(&quot;private C.w()&quot;);
+            }
+        };
+    }
+}
+
+public class AnonymousImplementation {
+    public static void
+    main(String[] args) throws Exception {
+        A a = AnonymousA.makeA();
+        a.f();
+        System.out.println(a.getClass().getName());
+        // 反射仍然能访问匿名类内部：
+        HiddenImplementation.callHiddenMethod(a, &quot;g&quot;);
+        HiddenImplementation.callHiddenMethod(a, &quot;u&quot;);
+        HiddenImplementation.callHiddenMethod(a, &quot;v&quot;);
+        HiddenImplementation.callHiddenMethod(a, &quot;w&quot;);
+    }
+}
+/*
+Output:
+public C.f()
+reflection.AnonymousA$1
+public C.g()
+package C.u()
+protected C.v()
+private C.w()
+*/
+</code></pre>
+<p>看来没有任何方法可以阻止反射进入并调用非公共访问权限的方法。对于字段，甚至是<code>private</code>的字段，也是如此：</p>
+<pre><code class="language-java">package reflection;
+
+import java.lang.reflect.Field;
+
+/**
+ * @author: Caldarius
+ * @date: 2023/2/14
+ * @description:
+ */
+class WithPrivateFinalField {
+    private int i = 1;
+    private final String s = &quot;I'm totally safe&quot;;
+    private String s2 = &quot;Am I safe?&quot;;
+    @Override public String toString() {
+        return &quot;i = &quot; + i + &quot;, &quot; + s + &quot;, &quot; + s2;
+    }
+}
+
+public class ModifyingPrivateFields {
+    public static void
+    main(String[] args) throws Exception {
+        WithPrivateFinalField pf =
+                new WithPrivateFinalField();
+        System.out.println(pf);
+        Field f = pf.getClass().getDeclaredField(&quot;i&quot;);
+        f.setAccessible(true);
+        System.out.println(
+                &quot;f.getInt(pf): &quot; + f.getInt(pf));
+        f.setInt(pf, 47);
+        System.out.println(pf);
+        f = pf.getClass().getDeclaredField(&quot;s&quot;);
+        f.setAccessible(true);
+        System.out.println(&quot;f.get(pf): &quot; + f.get(pf));
+        f.set(pf, &quot;No, you're not!&quot;);
+        System.out.println(pf);
+        f = pf.getClass().getDeclaredField(&quot;s2&quot;);
+        f.setAccessible(true);
+        System.out.println(&quot;f.get(pf): &quot; + f.get(pf));
+        f.set(pf, &quot;No, you're not!&quot;);
+        System.out.println(pf);
+    }
+}
+/*
+Output:
+i = 1, I'm totally safe, Am I safe?
+f.getInt(pf): 1
+i = 47, I'm totally safe, Am I safe?
+f.get(pf): I'm totally safe
+i = 47, I'm totally safe, Am I safe?
+f.get(pf): Am I safe?
+i = 47, I'm totally safe, No, you're not!
+*/
+</code></pre>
+<p>不过，<code>final</code>字段实际上是安全的，不会发生变化。运行时系统在接受任何更改尝试时并不会报错，但实际上什么也不会发生。</p>
+<p>一般来说，这些访问违规并不是世界上最糟糕的事情。如果有人使用这种技术来调用你标记为<code>private</code>或包访问权限的方法（即这些方法不应该被调用），那么当你更改这些方法的某些方面时，他们就不应该抱怨。此外，Java语言提供了一个后门来访问类，这一事实可以让你能够解决某些特定类型的问题。如果没有这个后门的话，这些问题会难以解决，甚至不可能解决。反射带来的好处通常很难否认。</p>
+<p>程序员经常对语言提供的访问控制过于自信，以至于相信在安全性方面，Java比其他提供了（显然）不太严格的访问控制的语言更优越<strong>5</strong>。正如你所看到的，事实并非如此。</p>
+<p><strong>5</strong>例如，在Python中，你在要隐藏的元素前面放置一个双下划线<code>__</code>，如果尝试在类或包之外访问它，运行时系统就会报错。</p>
+<h2 id="1910-总结">19.10　总结</h2>
+<p>反射从匿名的基类引用中发现类型信息。初学者极易误用它，因为在学会使用多态方法调用之前，使用反射可能感觉很合理。对有过程化编程背景的人来说，很难不把程序组织成一系列的<code>switch</code>语句。你可以用反射实现这一点，但是这样的话，就在代码开发和维护过程中失去了多态的重要价值。面向对象编程语言的目的就是，在任何可能的地方都使用多态，而只在必要的时候使用反射。</p>
+<p>但是，如果想按预期使用多态方法调用，就需要控制基类的定义，因为在扩展程序的时候，你可能会发现基类并未包含自己想要的方法。如果基类来自别人的库，一种解决方案就是反射：你可以继承一个新类，然后添加额外的方法。在代码的其他地方，你可以检查自己特定的类型，并调用这个特殊方法。这样做不会破坏程序的多态性以及可扩展性，因为只添加一个新类型的话，并不会让你在程序中到处查找<code>switch</code>语句来修改。但如果添加需要新功能的代码，就必须使用反射来检查你的特定类型。</p>
+<p>将某个功能放在基类中可能意味着，为了某个特定类的利益，接口变得不那么合理。例如，考虑一个代表乐器的类层次结构。假设我们想清洁管弦乐队中某些乐器的排气阀。一个办法是在基类<code>Instrument</code>中放置一个<code>clearSpitValve()</code>方法，但这会造成混淆，因为它暗示<code>Percussion</code>、<code>Stringed</code>和<code>Electronic</code>这些乐器也有排气阀。反射可以提供一个合理的解决方案，你可以将方法放在合适的特定类中（在本例中为<code>Wind</code>）。同时，你可能会发现一个更合理的解决方案，例如在基类中提供一个<code>prepareInstrument()</code>方法。但是，当你第一次解决问题时，可能看不到这样的解决方案，而错误地认为必须使用反射。</p>
+<p>最后，反射有时能解决效率问题。假设你的代码使用了多态，但是其中某个对象运行这种通用代码的效率极低。你可以使用反射来选择该类型，然后为其编写特定场景的代码来提高效率。但是，请注意不要过早为提高效率而编程。这是一个诱人的陷阱。最好让程序<strong>先</strong>运行起来，再考虑它是否运行得足够快，如果想要解决效率问题，则应该使用分析器（profiler）。</p>
+<p>我们还看到，由于反射允许更加动态的编程风格，因此它开创了一个包含各种可能性的编程新世界。对某些人来说，反射的这种动态特性令人不安。你可以执行一些操作，这些操作只能在运行时检查，并且用异常来报告检查结果，而对于已经习惯了静态类型检查安全性的人来说，这看起来好像是一个错误的方向。有些人甚至声称引入运行时异常本身就是一个明确的表示，这说明应该避免这种代码。我发现这种安全感是一种幻觉，因为总有一些事情可能在运行时发生并抛出异常，即使在一个不包含<code>try</code>块或异常说明的程序中也是如此。与之前那种意见相反，我认为一致的错误报告模型的存在，使我们<strong>能够</strong>通过反射编写动态代码。当然，尽力编写能够进行静态检查的代码是值得的，如果可以的话就应该这么做。但是我相信动态代码是将Java与C++等语言区分开来的重要工具之一。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#191-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%8F%8D%E5%B0%84">19.1　为什么需要反射</a></li>
+<li><a href="#192-class%E5%AF%B9%E8%B1%A1">19.2　<code>Class</code>对象</a>
+<ul>
+<li><a href="#1921-%E7%B1%BB%E5%AD%97%E9%9D%A2%E9%87%8F">19.2.1　类字面量</a></li>
+<li><a href="#1922-%E6%B3%9B%E5%9E%8B%E7%B1%BB%E7%9A%84%E5%BC%95%E7%94%A8">19.2.2　泛型类的引用</a></li>
+<li><a href="#1923-cast%E6%96%B9%E6%B3%95">19.2.3　<code>cast()</code>方法</a></li>
+</ul>
+</li>
+<li><a href="#193-%E8%BD%AC%E5%9E%8B%E5%89%8D%E6%A3%80%E6%9F%A5">19.3　转型前检查</a>
+<ul>
+<li><a href="#1931-%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%AD%97%E9%9D%A2%E9%87%8F">19.3.1　使用类字面量</a></li>
+<li><a href="#1932-%E5%8A%A8%E6%80%81%E7%9A%84instanceof">19.3.2　动态的<code>instanceof</code></a></li>
+<li><a href="#1933-%E9%80%92%E5%BD%92%E8%AE%A1%E6%95%B0">19.3.3　递归计数</a></li>
+</ul>
+</li>
+<li><a href="#194-%E6%B3%A8%E5%86%8C%E5%B7%A5%E5%8E%82">19.4　注册工厂</a></li>
+<li><a href="#195-instanceof%E4%B8%8Eclass%E7%9A%84%E7%AD%89%E4%BB%B7%E6%80%A7">19.5　<code>Instanceof</code>与<code>Class</code>的等价性</a></li>
+<li><a href="#196-%E8%BF%90%E8%A1%8C%E6%97%B6%E7%9A%84%E7%B1%BB%E4%BF%A1%E6%81%AF">19.6　运行时的类信息</a>
+<ul>
+<li><a href="#%E7%B1%BB%E6%96%B9%E6%B3%95%E6%8F%90%E5%8F%96%E5%99%A8">类方法提取器</a></li>
+</ul>
+</li>
+<li><a href="#197-%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86">19.7　动态代理</a></li>
+<li><a href="#198-%E4%BD%BF%E7%94%A8optional">19.8　使用<code>Optional</code></a>
+<ul>
+<li><a href="#1981-%E6%A0%87%E7%AD%BE%E6%8E%A5%E5%8F%A3">19.8.1　标签接口</a></li>
+<li><a href="#1982-%E6%A8%A1%E6%8B%9F%E5%AF%B9%E8%B1%A1%E5%92%8C%E6%A1%A9">19.8.2　模拟对象和桩</a></li>
+</ul>
+</li>
+<li><a href="#199-%E6%8E%A5%E5%8F%A3%E5%92%8C%E7%B1%BB%E5%9E%8B%E4%BF%A1%E6%81%AF">19.9　接口和类型信息</a></li>
+<li><a href="#1910-%E6%80%BB%E7%BB%93">19.10　总结</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://caldarius.github.io/post/dai-li-mo-shi-de-san-chong-shi-xian/">
+              <h3 class="post-title">
+                代理模式的三种实现
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://caldarius.github.io//atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

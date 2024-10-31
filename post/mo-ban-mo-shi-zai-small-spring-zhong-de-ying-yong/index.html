@@ -1,0 +1,356 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>模板模式在Small-Spring中的应用 | Caldarius</title>
+<link rel="shortcut icon" href="https://caldarius.github.io//favicon.ico?v=1730380932353">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://caldarius.github.io//styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="模板模式在Small-Spring中的应用 | Caldarius - Atom Feed" href="https://caldarius.github.io//atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="十月在学习小傅哥的手写Spring系列文章，其中在step-02Bean 的定义、注册、获取，这部分卡了比较久。主要原因是对模板模式在开发中的应用不太熟悉。下面就模板模式以及模板模式在Small-Spring中的应用分享一些个人理解。
+模板..." />
+    <meta name="keywords" content="Spring,设计模式" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://caldarius.github.io/">
+  <img class="avatar" src="https://caldarius.github.io//images/avatar.png?v=1730380932353" alt="">
+  </a>
+  <h1 class="site-title">
+    Caldarius
+  </h1>
+  <p class="site-description">
+    世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活。
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              模板模式在Small-Spring中的应用
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-10-23
+              </span>
+              <span>
+                8 min read
+              </span>
+              
+                <a href="https://caldarius.github.io/tag/spring/" class="post-tag">
+                  # Spring
+                </a>
+              
+                <a href="https://caldarius.github.io/tag/dp/" class="post-tag">
+                  # 设计模式
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://caldarius.github.io//post-images/mo-ban-mo-shi-zai-small-spring-zhong-de-ying-yong.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>十月在学习小傅哥的<a href="https://bugstack.cn/md/spring/develop-spring/2021-05-16-%E7%AC%AC1%E7%AB%A0%EF%BC%9A%E5%BC%80%E7%AF%87%E4%BB%8B%E7%BB%8D%EF%BC%8C%E6%89%8B%E5%86%99Spring%E8%83%BD%E7%BB%99%E4%BD%A0%E5%B8%A6%E6%9D%A5%E4%BB%80%E4%B9%88%EF%BC%9F.html">手写Spring系列文章</a>，其中在step-02Bean 的定义、注册、获取，这部分卡了比较久。主要原因是对模板模式在开发中的应用不太熟悉。下面就模板模式以及模板模式在Small-Spring中的应用分享一些个人理解。</p>
+<h2 id="模板模式简介">模板模式简介</h2>
+<p>在设计模式的经典教科书GOF中，模板模式英文全称为Template Method Design Pattern。书中给出了如下定义（当然是翻译过的）：模板模式在一个方法中定义了一个算法骨架，并将这个骨架的一部分方法推迟到了其子类中实现。模板模式让子类不改变算法整体骨架的情况下，重新定义算法中某些具体步骤的实现。</p>
+<p>从Java语言实现的角度解析，模板模式的主体是一个模板方法，模板方法描述了算法骨架，这里的算法骨架指的是“业务逻辑”，这些业务逻辑中包含了对抽象方法的调用。这也表明了模板模方法所在的类是一个抽象类。这些抽象方法会由抽象类的不同子类分别实现。直到所有的抽象方法均被实现，这时会产生可以被实例化的类。</p>
+<pre><code class="language-java">package com.caldarius.study.dp.template_pattern;
+
+/**
+ * @since 2024/10/16
+ * @author  Caldarius
+ * description: 一个把猫放进冰箱的模板方法模式示例
+ **/
+public abstract class AbstractMethodClass {
+    public final void putTheCatInTheFridgeMethod() {
+        method1();
+        method2();
+        method3();
+    }
+
+
+    abstract protected void method1();
+    abstract protected void method2();
+    abstract protected void method3();
+}
+
+abstract class AbstractImplMethod1 extends AbstractMethodClass{
+
+    @Override
+    protected void method1() {
+        System.out.println(&quot;Open the fridge;&quot;);
+    }
+}
+abstract class AbstractImplMethod2 extends AbstractImplMethod1{
+
+    @Override
+    protected void method2() {
+        System.out.println(&quot;Put the cat in the fridge;&quot;);
+    }
+}
+
+class AbstractImplMethod3 extends AbstractImplMethod2{
+
+    @Override
+    protected void method3() {
+        System.out.println(&quot;Close the fridge;&quot;);
+    }
+
+    public static void main(String[] args) {
+        new AbstractImplMethod3().putTheCatInTheFridgeMethod();
+    }
+}
+/*
+output:
+Open the fridge;
+Put the cat in the fridge;
+Close the fridge;
+ */
+
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://caldarius.github.io//post-images/1729648110167.png" alt="" loading="lazy"></figure>
+<p>从示例代码以及类图可以看到，<code>AbstractMethodClass</code>定义类模板方法<code>putTheCatInTheFridgeMethod()</code>这里有一个细节是：为了避免子类重写模板方法，可以在模板方法的签名处使用<code>final</code>关键字修饰。</p>
+<p>在模板方法中，调用了三个抽象方法，分别是M1-M3.标识模板方法对应的业务逻辑需要三步去完成。后续的三个字类分别实现了三个方法中的一个，最终<code>AbstractImplMethod3</code>完成了全部的方法实现，成为了一个可以被实例化的普通Java类，在其<code>main()</code>方法中完成了<code>putTheCatInTheFridgeMethod()</code>调用。</p>
+<p>模板模式分离了业务逻辑是什么，以及业务逻辑应该怎么实现这两个关注点，其主要作用在于复用和拓展。关于其分离关注点的功能，示例代码中已有体现，关于其复用和拓展，后续会在Small-Spring中体现</p>
+<h2 id="small-spring中的模板模式">Small-Spring中的模板模式</h2>
+<p>这部分源码主要来自于[第03章：实现 Bean 的定义、注册、获取 | 小傅哥 bugstack 虫洞栈](https://bugstack.cn/md/spring/develop-spring/2021-05-23-第3章：初显身手，运用设计模式，实现 Bean 的定义、注册、获取.html) 下面是对其内容的一些解析。<br>
+首先观察一下其类的结构：</p>
+<figure data-type="image" tabindex="2"><img src="https://caldarius.github.io//post-images/1729648098008.png" alt="" loading="lazy"></figure>
+<ul>
+<li><code>BeanFactory</code> 定义了<code>getBean</code> 方法，后续交由抽象类<code>AbstractBeanFactory </code>实现。</li>
+<li><code>AbstractBeanFactory </code>类中，<code>getBean</code>方法即为一个典型的模板方法。<code>getBean</code>方法以及抽象方法源码如下：</li>
+</ul>
+<pre><code class="language-java">package com.caldarius.springfw.beans.factory.support;
+
+
+import com.caldarius.springfw.beans.BeansException;
+import com.caldarius.springfw.beans.factory.BeanFactory;
+import com.caldarius.springfw.beans.factory.config.BeanDefinition;
+
+/**
+ *
+ * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
+ * 作为BeanFactory这一容器的接口模板，组织getBean()的具体实现逻辑，同时继承了DefaultSingletonBeanRegistry，表示后续默认支持单例对象注册。后续要支持多实例，这里应该会抽象统一的注册器。
+ * 这里需要克制对实例化一个抽象类的冲动，因为抽象类是不能实例化的，只有补完的普通类才能够实例化。
+ */
+public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
+    //这里是模板模式的集中体现，定义和核心的调用逻辑，以及下面两个抽象方法定义了核心接口。后续子类不需要关系逻辑调用，只需要关系对核心接口的具体实现。
+    @Override
+    public Object getBean(String name) throws BeansException {
+        Object bean = getSingleton(name);
+        if (bean != null) {
+            return bean;
+        }
+
+        BeanDefinition beanDefinition = getBeanDefinition(name);
+        return createBean(name, beanDefinition);
+    }
+    //下面两个位置是给下层留下的扩展点，后续可以根据不同的需求扩展出不同的类。
+    protected abstract BeanDefinition getBeanDefinition(String beanName) throws BeansException;
+
+    protected abstract Object createBean(String beanName, BeanDefinition beanDefinition) throws BeansException;
+
+}
+</code></pre>
+<p>可以注意到的是方法中包含了<code>getBeanDefinition</code>,<code>createBean</code>两个方法，分别完成了Bean定义信息的获取以及Bean对象的创建。而这两个抽象方法分别由 <code>DefaultListableBeanFactory</code>、<code>AbstractAutowireCapableBeanFactory</code> 两个类实现。最终<code>DefaultListableBeanFactory</code>成为了最终实现类，可以被实例化使用。</p>
+<p><code>DefaultListableBeanFactory</code>、<code>AbstractAutowireCapableBeanFactory</code> 两个实现类源码如下：</p>
+<p>AbstractAutowireCapableBeanFactory：</p>
+<pre><code class="language-java">package com.caldarius.springfw.beans.factory.support;
+
+
+import com.caldarius.springfw.beans.BeansException;
+import com.caldarius.springfw.beans.factory.config.BeanDefinition;
+
+/**
+ * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
+ *
+ * 实现了父类中createBean方法 -&gt; 使用自动写入的方式
+ */
+public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory {
+
+    @Override
+    protected Object createBean(String beanName, BeanDefinition beanDefinition) throws BeansException {
+        Object bean;
+        try {
+            //这里现在不支持有参数的构造，而且如果BeanClass没有提供无参构造，这里会出问题
+            bean = beanDefinition.getBeanClass().newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new BeansException(&quot;Instantiation of bean failed&quot;, e);
+        }
+
+        addSingleton(beanName, bean);
+        return bean;
+    }
+
+}
+
+</code></pre>
+<p>DefaultListableBeanFactory：</p>
+<pre><code class="language-java">package com.caldarius.springfw.beans.factory.support;
+
+import com.caldarius.springfw.beans.factory.config.BeanDefinition;
+import com.caldarius.springfw.beans.BeansException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
+ * 实现了父类AbstractBeanFactory 中getBeanDefinition()方法，以及BeanDefinitionRegistry接口中registerBeanDefinition到容器的方法。
+ * 对以上类、接口的集成和实现，使其成为具备注册Bean、获取Bean能力的核心实现类
+ */
+public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory implements BeanDefinitionRegistry {
+    //作为存放注册好的BeanDefinition的容器
+    private final Map&lt;String, BeanDefinition&gt; beanDefinitionMap = new HashMap&lt;&gt;();
+    //注册BeanDefinition的实现
+    @Override
+    public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition) {
+        beanDefinitionMap.put(beanName, beanDefinition);
+    }
+
+    @Override
+    public BeanDefinition getBeanDefinition(String beanName) throws BeansException {
+        BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+        if (beanDefinition == null) throw new BeansException(&quot;No bean named '&quot; + beanName + &quot;' is defined&quot;);
+        return beanDefinition;
+    }
+}
+
+</code></pre>
+<p>在简介中提到，模版模式的主要作用是复用和拓展。</p>
+<p>以上文三个类的源码为例，其复用体现在所有子类可以使用父类中定义的算法骨架，无需自己实现。</p>
+<p>其拓展作用体现在业务模版中的抽象方法为业务的具体实现提供拓展点，这一点在框架中体现的尤为明显。例如createBean方法的实现中，直接使用了newInstance方法创建Bean对象。如果有扩展的需求，完全可以再创建一个子类，重写createBean, 使用CGLib或者通过反射找到其他构造函数并创建对象。</p>
+<h2 id="总结">总结</h2>
+<p>本文简述了模版模式的基本结构以及其分离业务逻辑和具体实现的功能，以及复用和拓展两个主要作用。同时解析了Small-Spring中对模版模式的应用。</p>
+<p>文章的设计模式部分参考了<a href="https://time.geekbang.org/column/intro/100039001?utm_campaign=geektime_search&amp;utm_content=geektime_search&amp;utm_medium=geektime_search&amp;utm_source=geektime_search&amp;utm_term=geektime_search">极客时间-王争-设计模式之美 (geekbang.org)</a></p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E6%A8%A1%E6%9D%BF%E6%A8%A1%E5%BC%8F%E7%AE%80%E4%BB%8B">模板模式简介</a></li>
+<li><a href="#small-spring%E4%B8%AD%E7%9A%84%E6%A8%A1%E6%9D%BF%E6%A8%A1%E5%BC%8F">Small-Spring中的模板模式</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://caldarius.github.io/post/factory-huan-shi-builder/">
+              <h3 class="post-title">
+                Factory还是Builder
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://caldarius.github.io//atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
